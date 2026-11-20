@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VocabMaster Ultra</title>
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png?v=10" />
+  <link rel="icon" type="image/png" sizes="64x64" href="assets/icons/favicon.png?v=10" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#00d4ff" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="VocabMaster" />
+  <link rel="apple-touch-icon" href="assets/icons/logo.png" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- ══════════════════ LEFT COLLAPSIBLE SIDEBAR ══════════════════ -->
+  <aside id="appSidebar" class="app-sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-left">
+        <div class="logo-avatar">
+          <img src="assets/icons/logo.png?v=5" alt="VocabMaster Ultra Logo" class="brand-logo-img" />
+        </div>
+        <div class="brand-text-wrap">
+          <h1>VocabMaster</h1>
+          <p class="brand-subtitle">The Ultimate English Trainer</p>
+        </div>
+      </div>
+      <button id="btnToggleSidebar" class="sidebar-toggle-btn" title="Toggle Sidebar" aria-label="Toggle Sidebar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+    </div>
+
+    <div class="sidebar-scroll">
+      <div class="sidebar-section-label">Start here</div>
+      <nav class="sidebar-nav">
+        <button class="nav-btn sidebar-item active" data-mode="flashcards" title="Flashcards" data-tooltip="Flashcards">
+          <span class="nav-icon flashcards-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2.5" y="6.5" width="12" height="15" rx="2.5"></rect>
+              <path d="M7 3.5h11A2.5 2.5 0 0 1 20.5 6v13"></path>
+            </svg>
+          </span>
+          <span class="nav-label">Flashcards</span>
+        </button>
+        <button class="nav-btn sidebar-item" data-mode="quiz" title="Practice Arena" data-tooltip="Practice Arena">
+          <span class="nav-icon arena-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"></polyline>
+              <line x1="13" y1="19" x2="19" y2="13"></line>
+              <line x1="16" y1="16" x2="20" y2="20"></line>
+              <line x1="19" y1="21" x2="21" y2="19"></line>
+              <polyline points="14.5 6.5 18 3 21 3 21 6 17.5 9.5"></polyline>
+              <line x1="5" y1="11" x2="11" y2="5"></line>
+              <line x1="4" y1="20" x2="8" y2="16"></line>
+            </svg>
+          </span>
+          <span class="nav-label">Practice Arena</span>
+        </button>
+        <button class="nav-btn sidebar-item" data-mode="context" title="Context Builder" data-tooltip="Context Builder">
+          <span class="nav-icon context-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2L12 3z"></path>
+            </svg>
+          </span>
+          <span class="nav-label">Context Builder</span>
+        </button>
+        <button class="nav-btn sidebar-item" data-mode="manage" title="Word Manager" data-tooltip="Word Manager">
+          <span class="nav-icon manager-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"></path>
+              <line x1="8" y1="7" x2="16" y2="7"></line>
+              <line x1="8" y1="11" x2="16" y2="11"></line>
+              <line x1="8" y1="15" x2="12" y2="15"></line>
+              <path d="m18 14 3 3-4 4h-3v-3z"></path>
+            </svg>
+          </span>
+          <span class="nav-label">Word Manager</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="sidebar-special">
+        <button class="sidebar-item sidebar-special-btn mistakes" id="side-mistakes" title="Mistakes" data-tooltip="Mistakes">
+          <span class="nav-icon mistakes-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+          </span>
+          <span class="nav-label">Mistakes</span>
+          <span class="sidebar-count-pill warn" id="sideMistakesCount">0</span>
+        </button>
+        <button class="sidebar-item sidebar-special-btn all-units" id="side-all" title="All Units" data-tooltip="All Units">
+          <span class="nav-icon all-units-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+              <polyline points="2 12 12 17 22 12"></polyline>
+              <polyline points="2 17 12 22 22 17"></polyline>
+            </svg>
+          </span>
+          <span class="nav-label">All Units</span>
+          <span class="sidebar-count-pill" id="sideAllCount">0</span>
+        </button>
+      </div>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="sidebar-section-label">Your folders</div>
+      <div class="sidebar-units-list" id="unitsTabList">
+        <!-- Dynamically injected unit folders -->
+      </div>
+      <button class="sidebar-item sidebar-new-unit" id="btnQuickAddUnit" title="Create a new isolated unit" data-tooltip="+ New Unit">
+        <span class="nav-icon new-unit-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </span>
+        <span class="nav-label">+ New Unit</span>
+      </button>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-footer-row">
+        <div class="sidebar-version-badge" id="sidebarVersionBadge">
+          <span class="version-dot"></span>
+          <span id="sidebarVersionPill">v1.0.2</span>
+        </div>
+        <button class="sidebar-update-icon-btn" id="btnSidebarCheckUpdate" title="Check for updates" data-tooltip="Check Updates">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+  <!-- ══════════════════ RIGHT WORKSPACE SHELL ══════════════════ -->
+  <div class="app-shell">
+
+    <!-- ══════════════════ SLEEK STICKY TOP HEADER ══════════════════ -->
+    <header class="app-header">
+      <div class="header-left-group">
+        <button id="btnMobileSidebar" class="mobile-sidebar-btn" title="Open Menu" aria-label="Open Menu">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+
+        <div class="header-active-unit">
+          <span class="header-active-label">Active Deck</span>
+          <h2 id="headerActiveUnitTitle" class="header-active-title">Unit_1</h2>
+        </div>
+
+        <div class="units-actions-side" id="unitsActionsNormal">
+          <button class="btn-tool" id="btnAddPartToUnit" title="Add a sub-part inside this unit">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span>+ Part</span>
+          </button>
+          <button class="btn-tool warn" id="btnRenameActiveUnit" title="Rename current active unit or part">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+            <span>Rename</span>
+          </button>
+          <button class="btn-tool" id="btnClearActiveUnitWords" title="Clear all words in this unit only">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            <span>Clear Words</span>
+          </button>
+          <button class="btn-tool danger" id="btnDeleteActiveUnit" title="Delete current unit and its words">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+            <span>Delete Unit</span>
+          </button>
+        </div>
+
+        <div class="units-actions-side hidden" id="unitsActionsMistakes">
+          <button class="btn-tool danger-solid" id="btnClearAllMistakes" title="Clear all recorded mistakes">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            <span>Clear All Mistakes</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="header-stats">
+        <div class="stat-badge">
+          <span class="stat-label">Unit Words</span>
+          <span class="stat-value" id="statUnitCount">0</span>
+        </div>
+        <div class="stat-badge">
+          <span class="stat-label">Total</span>
+          <span class="stat-value" id="statTotalCount">0</span>
+        </div>
+        <div class="stat-badge danger-glow">
+          <span class="stat-label">Mistakes</span>
+          <span class="stat-value" id="statMistakesCount">0</span>
+        </div>
+        <div class="stat-badge accent">
+          <span class="stat-label">Mastery</span>
+          <span class="stat-value" id="statMastery">0%</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Unit Parts Sub-bar (shown when active unit has parts) -->
+    <div id="unitPartsBar" class="unit-parts-bar hidden"></div>
+
+  <!-- ══════════════════ MAIN CONTENT ══════════════════ -->
+  <main class="app-main">
+
+    <!-- ─────── VIEW 1: FLASHCARDS STUDIO (3D CARD + DECK QUEUE) ─────── -->
+    <section class="mode-panel active" id="flashcardsPanel">
+      <div class="studio-grid">
+
+        <!-- Left / Main: Interactive 3D Card -->
+        <div class="studio-card-col">
+          <div class="studio-top-controls">
+            <div class="studio-badges">
+              <span class="active-unit-badge" id="activeUnitBadgeWrap">
+                <strong id="flashcardUnitName">—</strong>
+              </span>
+              <span class="card-counter-pill" id="cardCounter">Card 0 of 0</span>
+            </div>
+            <div class="studio-toggles">
+              <button class="btn-control" id="btnAutoAudio" title="Auto-pronounce when flipping or switching cards">
+                🔊 Auto-Voice: <span id="autoAudioLabel">ON</span>
+              </button>
+              <button class="btn-control" id="btnPocketLoop" title="Auto-play all cards hands-free (Pocket Mode)">
+                🎧 Pocket Loop: <span id="pocketLoopLabel">OFF</span>
+              </button>
+              <button class="btn-control" id="btnShuffleCards" title="Shuffle cards in current unit">
+                🔀 Shuffle
+              </button>
+            </div>
+          </div>
+
+          <!-- Progress Bar -->
+          <div class="progress-section">
+            <div class="progress-bar-track">
+              <div class="progress-bar-fill" id="progressFill"></div>
+            </div>
+            <span class="progress-text" id="progressText">0 / 0 Mastered (0%)</span>
+          </div>
+
+          <!-- 3D Flip Card -->
+          <div class="card-scene" id="cardScene">
+            <div class="card-body" id="cardBody">
+              <!-- FRONT FACE -->
+              <div class="card-face card-front" id="cardFront">
+                <div class="card-face-header">
+                  <span class="card-type" id="cardType">NOUN</span>
+                  <div class="card-face-actions">
+                    <span class="card-mastery-pill" id="cardMasteryBadge">0% Mastery</span>
+                    <button class="btn-speak" id="btnSpeakSlow" title="Slow Pronunciation (0.6x)">🐢</button>
+                    <button class="btn-speak" id="btnSpeak" title="Pronounce word">🔊</button>
+                  </div>
+                </div>
+
+                <div class="card-face-center">
+                  <h2 class="card-word" id="cardWord">—</h2>
+                  <p class="card-hint">Click card or press <kbd>Space</kbd> to flip</p>
+                </div>
+
+                <div class="card-face-footer">
+                  <span class="mistake-pill hidden" id="fcMistakeIndicator">⚠️ Needs Practice</span>
+                  <span class="lang-dir-label">English ➔ Arabic</span>
+                </div>
+              </div>
+
+              <!-- BACK FACE -->
+              <div class="card-face card-back" id="cardBack">
+                <div class="card-face-header">
+                  <span class="card-word-small" id="cardWordSmall">—</span>
+                  <div class="card-face-actions">
+                    <button class="btn-speak purple" id="btnSpeakExample" title="Pronounce example sentence">💬</button>
+                    <button class="btn-speak purple" id="btnSpeakBack" title="Pronounce word">🔊</button>
+                  </div>
+                </div>
+
+                <div class="card-face-center">
+                  <h3 class="card-meaning" id="cardMeaning">—</h3>
+                  <div class="card-example">
+                    <p class="example-en" id="exampleEn"></p>
+                    <p class="example-ar" id="exampleAr"></p>
+                  </div>
+                </div>
+
+                <div class="card-face-footer centered">
+                  <span class="lang-dir-label">Rate recall below (Keys: 1, 2, 3)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Navigation & Spaced Repetition Rating -->
+          <div class="studio-bottom-bar">
+            <button class="nav-arrow" id="btnPrev" title="Previous (Left Arrow)" aria-label="Previous">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
+
+            <div class="rating-buttons" id="ratingButtons">
+              <button class="rate-btn hard" data-rating="hard" title="Shortcut: 1">
+                <span class="rate-dot"></span>
+                <span class="rate-title">Hard</span>
+                <span class="rate-key">1</span>
+              </button>
+
+              <button class="rate-btn good" data-rating="good" title="Shortcut: 2">
+                <span class="rate-dot"></span>
+                <span class="rate-title">Good</span>
+                <span class="rate-key">2</span>
+              </button>
+
+              <button class="rate-btn easy" data-rating="easy" title="Shortcut: 3">
+                <span class="rate-dot"></span>
+                <span class="rate-title">Easy</span>
+                <span class="rate-key">3</span>
+              </button>
+            </div>
+
+            <button class="nav-arrow" id="btnNext" title="Next (Right Arrow)" aria-label="Next">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Right: Deck Queue Quick-Jump -->
+        <aside class="deck-queue-panel">
+          <div class="queue-header">
+            <div>
+              <h3>📑 Deck Queue</h3>
+              <p>Click any word to jump directly</p>
+            </div>
+            <span class="queue-count-badge" id="queueCountBadge">0 Words</span>
+          </div>
+          <div class="queue-list" id="fcMiniQueue">
+            <!-- Dynamically populated -->
+          </div>
+        </aside>
+
+      </div>
+    </section>
+
+    <!-- ─────── VIEW 2: PRACTICE ARENA (4 QUIZ MODES) ─────── -->
+    <section class="mode-panel" id="quizPanel">
+      <div class="quiz-unit-indicator">
+        Practicing deck: <strong id="quizUnitName">—</strong>
+      </div>
+
+      <div class="quiz-type-selector">
+        <button class="quiz-type-btn active" data-quiz="mcq">🔠 Multiple Choice</button>
+        <button class="quiz-type-btn" data-quiz="translate">🔄 Translate (AR ➔ EN)</button>
+        <button class="quiz-type-btn" data-quiz="spelling">✍️ Audio Spelling</button>
+        <button class="quiz-type-btn" data-quiz="match">🧩 Speed Match Game</button>
+      </div>
+
+      <!-- Shared Arena Score & Streak Bar -->
+      <div class="quiz-stage-card">
+        <div class="quiz-arena-header">
+          <div class="arena-left">
+            <span class="arena-deck-pill" id="quizArenaDeckLabel">—</span>
+            <span class="arena-progress-label" id="quizArenaProgress">Ready</span>
+          </div>
+          <div class="arena-right">
+            <span class="streak-pill" id="arenaStreak">🔥 0 Streak</span>
+            <span class="score-pill" id="arenaScore">✅ Score: 0</span>
+          </div>
+        </div>
+
+        <!-- 1. MCQ Quiz -->
+        <div class="quiz-area" id="mcqArea">
+          <div class="quiz-top-actions">
+            <span class="quiz-sub-score" id="mcqScore">0 / 0 Correct</span>
+            <button class="btn-small" id="btnResetMcq">🔄 Restart MCQ</button>
+          </div>
+          <div class="quiz-body">
+            <span class="quiz-type-tag" id="mcqWordType">NOUN</span>
+            <h2 class="quiz-question" id="mcqQuestion">—</h2>
+            <p class="quiz-prompt">Select the matching English word:</p>
+            <div class="mcq-options" id="mcqOptions"></div>
+            <button class="btn-primary" id="btnNextMcq" style="display:none">Next Question ➜</button>
+          </div>
+        </div>
+
+        <!-- 2. Translation Quiz (AR -> EN) -->
+        <div class="quiz-area hidden" id="translateArea">
+          <div class="quiz-top-actions">
+            <span class="quiz-sub-score" id="translateScore">0 / 0 Correct</span>
+            <button class="btn-small" id="btnResetTranslate">🔄 Restart Translate</button>
+          </div>
+          <div class="quiz-body">
+            <span class="translate-type-badge" id="translateType">NOUN</span>
+            <h2 class="quiz-question translate-ar-word" id="translateQuestion">—</h2>
+            <p class="quiz-prompt">Type the English word that matches this Arabic meaning:</p>
+            <div class="spelling-input-row">
+              <input type="text" id="translateInput" class="input-field quiz-input" placeholder="Type English translation..." autocomplete="off" />
+              <button class="btn-primary" id="btnCheckTranslate">Check Answer ✓</button>
+            </div>
+            <div class="translate-actions-row">
+              <button class="btn-hint" id="btnTranslateHint" title="Show first letters & word length">💡 Show Hint</button>
+              <button class="btn-listen-after hide" id="btnTranslateListen">🔊 Pronounce Word</button>
+            </div>
+            <p class="hint-display hidden" id="translateHintDisplay"></p>
+            <p class="spelling-feedback" id="translateFeedback"></p>
+            <p class="feedback-example" id="translateExampleFeedback"></p>
+            <button class="btn-primary" id="btnNextTranslate" style="display:none">Next Question ➜</button>
+          </div>
+        </div>
+
+        <!-- 3. Audio Spelling Quiz -->
+        <div class="quiz-area hidden" id="spellingArea">
+          <div class="quiz-top-actions">
+            <span class="quiz-sub-score" id="spellingScore">0 / 0 Correct</span>
+            <button class="btn-small" id="btnResetSpelling">🔄 Restart Spelling</button>
+          </div>
+          <div class="quiz-body">
+            <p class="quiz-prompt">Listen carefully and type the exact English spelling:</p>
+            <button class="btn-speak-large" id="btnSpellListen">🔊 Listen</button>
+            <p class="spelling-meaning" id="spellingHint"></p>
+            <div class="spelling-input-row">
+              <input type="text" id="spellingInput" class="input-field quiz-input" placeholder="Listen and spell the word..." autocomplete="off" />
+              <button class="btn-primary" id="btnCheckSpelling">Check Answer ✓</button>
+            </div>
+            <p class="spelling-feedback" id="spellingFeedback"></p>
+            <button class="btn-primary" id="btnNextSpelling" style="display:none">Next Question ➜</button>
+          </div>
+        </div>
+
+        <!-- 4. Speed Match Game -->
+        <div class="quiz-area hidden" id="matchArea">
+          <div class="quiz-top-actions">
+            <span class="quiz-prompt-inline">Match each English word with its Arabic meaning!</span>
+            <button class="btn-small" id="btnNewMatchBoard">🔄 New Board</button>
+          </div>
+          <div class="match-grid" id="matchGridBox">
+            <!-- 12 tiles dynamically injected -->
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ─────── VIEW 3: ACTIVE CONTEXT BUILDER (SIGNATURE FEATURE) ─────── -->
+    <section class="mode-panel" id="contextPanel">
+      <div class="quiz-stage-card context-stage-card">
+        <div class="quiz-arena-header">
+          <div class="arena-left">
+            <span class="arena-deck-pill">✨ Active Context Builder</span>
+            <span class="arena-progress-label" id="contextStatusLabel">0 / 3 Words Used</span>
+          </div>
+          <div class="arena-right">
+            <button class="btn-small" id="btnRollContextWords">🔄 New 3 Words</button>
+          </div>
+        </div>
+
+        <p class="context-desc">
+          Turn passive memorization into active fluency: write <b>one English sentence or mini-story</b> connecting all 3 words below from your active deck. Each word lights up emerald as you use it!
+        </p>
+
+        <div class="context-chips-row" id="contextChipsRow">
+          <!-- 3 Target Word Chips -->
+        </div>
+
+        <textarea id="contextSentenceInput" class="control-textarea context-textarea" placeholder="Write your English sentence connecting the 3 words above..."></textarea>
+
+        <div class="context-actions-bar">
+          <button type="button" class="btn-gradient-primary" id="btnSaveContextSentence">
+            <span>✨ Save Sentence &amp; Boost Mastery (+15%)</span>
+          </button>
+        </div>
+
+        <div class="saved-sentences-box" id="savedSentencesBox">
+          <!-- Saved context sentences -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────── VIEW 4: WORD MANAGER (ADD + IMPORT/EXPORT + EXPLORER) ─────── -->
+    <section class="mode-panel" id="managePanel">
+      <div class="manage-grid">
+
+        <!-- 1. Add Single Word Form (New Vocabulary Entry) -->
+        <div class="manage-card studio-card">
+          <div>
+            <header class="card-header">
+              <div class="header-title-group">
+                <div class="icon-badge">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                </div>
+                <div>
+                  <h2>New Vocabulary Entry</h2>
+                  <p class="card-subtitle">Create a single flashcard with context</p>
+                </div>
+              </div>
+            </header>
+
+            <form id="addWordForm" class="form-stack" autocomplete="off" style="margin-top: 16px;">
+              <div class="field-block">
+                <label class="field-label" for="inputUnitSelect">Target Deck</label>
+                <select id="inputUnitSelect" class="control-select"></select>
+              </div>
+
+              <div class="field-block">
+                <label class="field-label" for="inputWord">English Word</label>
+                <input type="text" id="inputWord" class="control-input" placeholder="e.g. Resilience" required />
+              </div>
+
+              <div class="field-block">
+                <span class="field-label">Part of Speech</span>
+                <input type="hidden" id="inputType" value="Noun" />
+                <div class="pos-pill-group" id="posPillGroup" role="group" aria-label="Part of Speech">
+                  <button type="button" class="pos-pill active" data-pos="Noun">Noun</button>
+                  <button type="button" class="pos-pill" data-pos="Verb">Verb</button>
+                  <button type="button" class="pos-pill" data-pos="Adjective">Adj</button>
+                  <button type="button" class="pos-pill" data-pos="Adverb">Adv</button>
+                  <button type="button" class="pos-pill" data-pos="Phrase">Phrase</button>
+                </div>
+              </div>
+
+              <div class="field-block">
+                <label class="field-label" for="inputMeaning">Arabic Meaning</label>
+                <input type="text" id="inputMeaning" class="control-input rtl-text" dir="rtl" placeholder="صمود، مرونة" required />
+              </div>
+
+              <div class="context-panel">
+                <div class="context-header">
+                  <span class="context-title">Context Examples (Optional)</span>
+                  <button type="button" class="btn-auto-gen" id="btnAutoFill">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2L12 3z"></path>
+                    </svg>
+                    <span>Auto-Generate</span>
+                  </button>
+                </div>
+                <input type="text" id="inputExample" class="control-input" placeholder="English example sentence..." />
+                <input type="text" id="inputExampleAr" class="control-input rtl-text" dir="rtl" placeholder="ترجمة الجملة بالعربية..." />
+              </div>
+            </form>
+          </div>
+
+          <button type="submit" form="addWordForm" class="btn-gradient-primary" style="margin-top: 16px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span>Add Word</span>
+          </button>
+        </div>
+
+        <!-- 2. Batch Import & Data -->
+        <div class="manage-card studio-card">
+          <header class="card-header">
+            <div class="header-title-group">
+              <div class="icon-badge purple">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="8" y1="6" x2="21" y2="6"></line>
+                  <line x1="8" y1="12" x2="21" y2="12"></line>
+                  <line x1="8" y1="18" x2="21" y2="18"></line>
+                  <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                  <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                  <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                </svg>
+              </div>
+              <div>
+                <h2>Batch Import &amp; Data</h2>
+                <p class="card-subtitle">Paste word lists or manage backups</p>
+              </div>
+            </div>
+
+            <!-- Top-Right Gear Settings Popover -->
+            <div class="settings-anchor" id="settingsAnchor">
+              <button type="button" class="btn-gear" id="btnDataSettingsGear" title="Data &amp; Backup Settings" aria-label="Data &amp; Backup Settings" aria-expanded="false">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+              </button>
+
+              <div class="settings-popover" id="dataSettingsPopover" role="menu">
+                <div class="popover-caption">Data &amp; Backup</div>
+
+                <label class="popover-row" role="menuitem">
+                  <div class="row-icon-box">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="17 8 12 3 7 8"></polyline>
+                      <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                  </div>
+                  <div class="row-meta">
+                    <span class="row-title">Import JSON / TXT File</span>
+                    <span class="row-desc">Append words into active deck</span>
+                  </div>
+                  <input type="file" id="fileImportCurrentUnit" accept=".json,.txt" hidden />
+                </label>
+
+                <button type="button" class="popover-row" id="btnExportActiveUnit" role="menuitem">
+                  <div class="row-icon-box">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="7 10 12 15 17 10"></polyline>
+                      <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                  </div>
+                  <div class="row-meta">
+                    <span class="row-title">Export Active Deck</span>
+                    <span class="row-desc">Download current unit as JSON</span>
+                  </div>
+                </button>
+
+                <button type="button" class="popover-row" id="btnExportAllData" role="menuitem">
+                  <div class="row-icon-box purple">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                      <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                      <polyline points="7 3 7 8 15 8"></polyline>
+                    </svg>
+                  </div>
+                  <div class="row-meta">
+                    <span class="row-title">Full Database Backup</span>
+                    <span class="row-desc">Save all units &amp; mastery</span>
+                  </div>
+                </button>
+
+                <div class="popover-divider"></div>
+
+                <button type="button" class="popover-row" id="btnCheckUpdatePopover" role="menuitem">
+                  <div class="row-icon-box cyan">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                    </svg>
+                  </div>
+                  <div class="row-meta">
+                    <span class="row-title">Check for Updates</span>
+                    <span class="row-desc" id="popoverVersionDesc">Current version: v1.0.2</span>
+                  </div>
+                </button>
+
+                <div class="popover-divider"></div>
+
+                <button type="button" class="popover-row danger" id="btnResetAllApp" role="menuitem">
+                  <div class="row-icon-box rose">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                      <path d="M10 11v6"></path>
+                      <path d="M14 11v6"></path>
+                    </svg>
+                  </div>
+                  <div class="row-meta">
+                    <span class="row-title">Reset All Data</span>
+                    <span class="row-desc">Restore starter demo deck</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </header>
+
+          <!-- Clean Bulk Paste Body -->
+          <div class="bulk-section">
+            <div class="field-label" style="display: flex; align-items: center; justify-content: space-between;">
+              <span>Format: word = meaning</span>
+              <span class="target-badge">Target: <span id="bulkTargetUnitName">—</span></span>
+            </div>
+
+            <textarea
+              id="bulkInput"
+              class="control-textarea"
+              placeholder="breakthrough = اختراق، إنجاز كبير&#10;diligent = مجتهد&#10;fluctuate = يتذبذب"
+            ></textarea>
+
+            <button type="button" class="btn-gradient-primary" id="btnBulkAdd">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span>Add List to Active Deck</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 3. Word Explorer & Table (Dual View: Bento Cards OR Compact Table) -->
+        <div class="manage-card full-span explorer-card">
+          <div class="wordlist-header">
+            <div class="wordlist-title-wrap">
+              <h3>🗂️ Word Explorer (<span id="listCount">0</span> words)</h3>
+              <span class="active-deck-tag" id="tableDeckTag">—</span>
+            </div>
+
+            <div class="wordlist-controls">
+              <input type="text" id="searchInput" class="input-field search" placeholder="🔍 Search words, meaning, type..." />
+              <select id="filterMastery" class="input-field filter-select-sm">
+                <option value="all">All Mastery Levels</option>
+                <option value="low">Needs Focus (&lt; 40%)</option>
+                <option value="mid">Learning (40% - 79%)</option>
+                <option value="high">Mastered (80%+)</option>
+              </select>
+              <select id="listScopeFilter" class="input-field filter-select">
+                <option value="active">Active Unit Only</option>
+                <option value="mistakes">⚠️ Mistakes Deck Only</option>
+                <option value="all">All Units Combined</option>
+              </select>
+              <div class="view-toggle-group">
+                <button class="view-toggle-btn active" id="btnViewCards" title="Bento Cards View">⊞ Cards</button>
+                <button class="view-toggle-btn" id="btnViewTable" title="Compact Table View">☰ Table</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Folder Navigation inside Active Unit -->
+          <div id="explorerBreadcrumb" class="explorer-breadcrumb hidden"></div>
+          <div id="explorerFoldersGrid" class="explorer-folders-grid hidden"></div>
+
+          <!-- View A: Bento Grid -->
+          <div id="wordCardsGrid" class="bento-cards-grid"></div>
+
+          <!-- View B: Compact Scrollable Table -->
+          <div class="wordlist-scroll-box hidden" id="wordlistScrollBox">
+            <table class="wordlist-table">
+              <thead>
+                <tr>
+                  <th class="th-num">#</th>
+                  <th class="th-word">Word</th>
+                  <th class="th-type">Type</th>
+                  <th class="th-meaning">Meaning</th>
+                  <th class="th-unit">Unit</th>
+                  <th class="th-mastery">Mastery</th>
+                  <th class="th-action">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="wordlistBody"></tbody>
+            </table>
+          </div>
+
+          <p class="empty-msg" id="emptyMsg">No words match your filter yet.</p>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  </div><!-- /.app-shell -->
+
+  <!-- ══════════════════ CUSTOM UNIT / PART DIALOG MODAL ══════════════════ -->
+  <div class="modal-backdrop hidden" id="unitModalBackdrop">
+    <div class="modal-dialog update-dialog" role="dialog" aria-modal="true" style="max-width: 420px;">
+      <div class="modal-dialog-header">
+        <div class="dialog-title-group">
+          <div class="dialog-icon-bubble">📁</div>
+          <div>
+            <h3 id="unitModalTitle" class="dialog-title">Create New Unit</h3>
+            <p id="unitModalSub" class="dialog-sub">Enter folder name below</p>
+          </div>
+        </div>
+        <button type="button" class="dialog-close-btn" id="btnCloseUnitModal" aria-label="Close">&times;</button>
+      </div>
+      <div class="dialog-body">
+        <input type="text" id="unitModalInput" class="control-input" placeholder="e.g. Unit 1, Business Vocab..." />
+      </div>
+      <div class="dialog-footer">
+        <button type="button" class="btn-cancel" id="btnCancelUnitModal">Cancel</button>
+        <button type="button" class="btn-update-confirm" id="btnConfirmUnitModal">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ IN-APP AUTO-UPDATE MODAL ══════════════════ -->
+  <div class="modal-backdrop hidden" id="updateModalBackdrop">
+    <div class="modal-dialog update-dialog" role="dialog" aria-modal="true" aria-labelledby="updateModalTitle">
+      <div class="modal-dialog-header">
+        <div class="dialog-title-group">
+          <div class="dialog-icon-bubble">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+            </svg>
+          </div>
+          <div>
+            <h3 id="updateModalTitle" class="dialog-title">New Update Available! 🚀</h3>
+            <p class="dialog-sub">تحديث جديد متوفر لتطبيق VocabMaster</p>
+          </div>
+        </div>
+        <button type="button" class="dialog-close-btn" id="btnCloseUpdateModal" aria-label="Close">&times;</button>
+      </div>
+
+      <div class="dialog-body">
+        <div class="update-versions-badge">
+          <div class="ver-col">
+            <span class="ver-lbl">Current Version</span>
+            <span class="ver-val current" id="lblCurrentVersion">v1.0.2</span>
+          </div>
+          <div class="ver-arrow">➔</div>
+          <div class="ver-col">
+            <span class="ver-lbl">New Version</span>
+            <span class="ver-val new" id="lblLatestVersion">v1.0.3</span>
+          </div>
+        </div>
+
+        <div class="update-notes-card">
+          <div class="notes-hdr">What's New / تفاصيل التحديث:</div>
+          <div class="notes-content" id="lblUpdateNotes">
+            New improvements and bug fixes.
+          </div>
+        </div>
+
+        <div class="update-data-safe-note">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <polyline points="9 12 11 14 15 10"/>
+          </svg>
+          <span>جميع كلماتك ووحداتك وتقدمك في الحفظ محفوظة بالكامل 100% ولن تتأثر.</span>
+        </div>
+
+        <!-- Updating Spinner & Progress -->
+        <div class="update-progress-box hidden" id="updateProgressBox">
+          <div class="spinner-circle"></div>
+          <div class="progress-label" id="lblUpdateProgressStatus">جاري تنزيل ملفات التحديث وتثبيتها...</div>
+        </div>
+      </div>
+
+      <div class="dialog-footer" id="updateDialogFooter">
+        <button type="button" class="btn-cancel" id="btnDismissUpdate">Later / لاحقاً</button>
+        <button type="button" class="btn-update-confirm" id="btnConfirmApplyUpdate">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          <span>Update Now / تحديث الآن</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ TOAST NOTIFICATIONS ══════════════════ -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- ══════════════════ KEYBOARD SHORTCUTS HINT ══════════════════ -->
+  <div class="shortcuts-hint" id="shortcutsHint">
+    <span><kbd>Space</kbd> Flip</span>
+    <span><kbd>→</kbd><kbd>←</kbd> Navigate</span>
+    <span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> Rate</span>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

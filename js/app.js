@@ -1,0 +1,2590 @@
+/* ═══════════════════════════════════════════════════════════════
+   VocabMaster Ultra V3 — app.js
+   100% Offline • Pure Decks • Smart Mistakes • 4 Quiz Modes • Bento + Table
+   ═══════════════════════════════════════════════════════════════ */
+
+const STORAGE_KEY = "vocabmaster_v3_ultra_store";
+
+// ────────────────────── INITIAL SEED DATA (CLEAN STATE) ──────────────────────
+// Fresh slate: Users start with a clean workspace (no pre-loaded folders or words).
+
+// ────────────────────── APPLICATION STATE ──────────────────────
+let state = {
+  activeUnitId: null, // unit key, "all", or "mistakes"
+  units: {},
+  mistakes: {},             // { [wordId]: { unitId, streak: 0, addedAt } }
+  autoPlayAudio: true,
+  explorerView: "cards",    // "cards" | "table"
+  contextSentences: []      // [{ text, words, date }]
+};
+
+// Pocket Audio Loop runtime
+let pocketLoopActive = false;
+let pocketLoopTimer = null;
+let contextTargetWords = [];
+
+// Session runtime states
+let currentMode = "flashcards";
+let activeQuizType = "mcq";
+let flashcardIndex = 0;
+let isCardFlipped = false;
+
+// Arena shared stats
+let arenaScore = 0;
+let arenaStreak = 0;
+
+// Quiz session lists
+let mcqList = [], mcqIndex = 0, mcqScore = 0, mcqTotal = 0, mcqAnswered = false;
+let spellList = [], spellIndex = 0, spellScore = 0, spellTotal = 0, spellAnswered = false;
+let transList = [], transIndex = 0, transScore = 0, transTotal = 0, transAnswered = false, transHintUsed = false;
+
+// Speed Match runtime
+let matchSelectedTile = null;
+let matchRemainingPairs = 0;
+let matchLocked = false;
+
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => document.querySelectorAll(sel);
+
+// ════════════════════════════════════════════════════
+//  1. STORAGE & PURE DECKS STATE
+// ════════════════════════════════════════════════════
+
+function loadState() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object") {
+        state.units = parsed.units && typeof parsed.units === "object" ? parsed.units : {};
+        state.mistakes = parsed.mistakes && typeof parsed.mistakes === "object" ? parsed.mistakes : {};
+        state.autoPlayAudio = parsed.autoPlayAudio !== undefined ? parsed.autoPlayAudio : true;
+        state.explorerView = parsed.explorerView === "table" ? "table" : "cards";
+        state.contextSentences = Array.isArray(parsed.contextSentences) ? parsed.contextSentences : [];
+
+        const keys = Object.keys(state.units);
+        if (parsed.activeUnitId === "all" || parsed.activeUnitId === "mistakes" || state.units[parsed.activeUnitId]) {
+          state.activeUnitId = parsed.activeUnitId;
+        } else {
+          state.activeUnitId = keys.length > 0 ? keys[0] : null;
+        }
+        return;
+      }
+    } catch (e) {
+      console.error("Failed to parse V3 store:", e);
+    }
+  }
+  seedInitialState();
+}
+
+function seedInitialState() {
+  state = {
+    activeUnitId: null,
+    units: {},
+    mistakes: {},
+    autoPlayAudio: true,
+    explorerView: "cards",
+    contextSentences: []
+  };
+  saveState();
+}
+
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  updateHeaderStats();
+}
+
+// ────────────────────── QUERY HELPERS ──────────────────────
+
+const collapsedUnits = new Set();
+
+function getTopLevelUnits() {
+  return Object.values(state.units).filter((u) => !u.parentId || !state.units[u.parentId]);
+}
+
+function getChildParts(parentId) {
+  return Object.values(state.units).filter((u) => u.parentId === parentId);
+}
+
+function getParentUnitId(unitId) {
+  const u = state.units[unitId];
+  if (u && u.parentId && state.units[u.parentId]) return u.parentId;
+  return unitId;
+}
+
+function getUnitTotalWordCount(unitId) {
+  const u = state.units[unitId];
+  if (!u) return 0;
+  let total = Array.isArray(u.words) ? u.words.length : 0;
+  getChildParts(unitId).forEach((p) => {
+    total += Array.isArray(p.words) ? p.words.length : 0;
+  });
+  return total;
+}
+
+function getAllWordsWithUnit() {
+  const all = [];
+  Object.values(state.units).forEach((u) => {
+    const parent = u.parentId && state.units[u.parentId] ? state.units[u.parentId] : null;
+    const displayName = parent ? `${parent.name} › ${u.name}` : u.name;
+    u.words.forEach((w) => {
+      all.push({
+        ...w,
+        _unitName: displayName,
+        _unitId: u.id,
+        _isMistake: !!state.mistakes[w.id]
+      });
+    });
+  });
+  return all;
+}
+
+function getActiveWords() {
+  if (state.activeUnitId === "mistakes") {
+    const list = [];
+    Object.entries(state.mistakes).forEach(([wordId, meta]) => {
+      for (const u of Object.values(state.units)) {
+        const found = u.words.find((w) => w.id === wordId);
+        if (found) {
+          const parent = u.parentId && state.units[u.parentId] ? state.units[u.parentId] : null;
+          list.push({
+            ...found,
+            _unitName: parent ? `${parent.name} › ${u.name}` : u.name,
+            _unitId: u.id,
+            _isMistake: true,
+            _mistakeStreak: meta.streak || 0
+          });
+          break;
+        }
+      }
+    });
+    return list;
+  }
+
+  if (state.activeUnitId === "all") {
+    return getAllWordsWithUnit();
+  }
+
+  const currentUnit = state.units[state.activeUnitId];
+  if (!currentUnit || !Array.isArray(currentUnit.words)) return [];
+
+  const isTopLevel = !currentUnit.parentId || !state.units[currentUnit.parentId];
+  if (isTopLevel) {
+    const combined = [];
+    currentUnit.words.forEach((w) => {
+      combined.push({
+        ...w,
+        _unitName: currentUnit.name,
+        _unitId: currentUnit.id,
+        _isMistake: !!state.mistakes[w.id]
+      });
+    });
+    getChildParts(currentUnit.id).forEach((part) => {
+      part.words.forEach((w) => {
+        combined.push({
+          ...w,
+          _unitName: `${currentUnit.name} › ${part.name}`,
+          _unitId: part.id,
+          _isMistake: !!state.mistakes[w.id]
+        });
+      });
+    });
+    return combined;
+  }
+
+  const parent = state.units[currentUnit.parentId];
+  const displayName = parent ? `${parent.name} › ${currentUnit.name}` : currentUnit.name;
+  return currentUnit.words.map((w) => ({
+    ...w,
+    _unitName: displayName,
+    _unitId: currentUnit.id,
+    _isMistake: !!state.mistakes[w.id]
+  }));
+}
+
+function getActiveUnitName() {
+  if (state.activeUnitId === "mistakes") return "⚠️ Mistakes / Review";
+  if (state.activeUnitId === "all") return "All Units";
+  const u = state.units[state.activeUnitId];
+  if (!u) return "No Unit";
+  if (u.parentId && state.units[u.parentId]) {
+    return `${state.units[u.parentId].name} › ${u.name}`;
+  }
+  return u.name;
+}
+
+function getFirstAvailableUnitId() {
+  const keys = Object.keys(state.units);
+  return keys.length > 0 ? keys[0] : null;
+}
+
+function getMistakesCount() {
+  return Object.keys(state.mistakes).filter((id) => findWordRef(id) !== null).length;
+}
+
+function findWordRef(wordId) {
+  for (const [uId, uObj] of Object.entries(state.units)) {
+    const wordObj = uObj.words.find((w) => w.id === wordId);
+    if (wordObj) return { wordObj, unitId: uId, unitName: uObj.name };
+  }
+  return null;
+}
+
+// ════════════════════════════════════════════════════
+//  2. SMART MISTAKES SYSTEM (AUTO-CAPTURE & GRADUATION)
+// ════════════════════════════════════════════════════
+
+function recordMistake(wordId, unitId, silent = false) {
+  const ref = findWordRef(wordId);
+  if (!ref) return;
+
+  const isNew = !state.mistakes[wordId];
+  state.mistakes[wordId] = {
+    unitId: unitId || ref.unitId,
+    streak: 0,
+    addedAt: isNew ? Date.now() : state.mistakes[wordId].addedAt
+  };
+
+  saveState();
+  renderUnitsToolbar();
+
+  if (!silent && isNew) {
+    toast(`⚠️ Added "${ref.wordObj.word}" to Mistakes deck`, "warning");
+  }
+}
+
+function recordSuccess(wordId, isEasyRating = false) {
+  if (!wordId || !state.mistakes[wordId]) return;
+  const ref = findWordRef(wordId);
+  const wordLabel = ref ? ref.wordObj.word : "Word";
+
+  if (isEasyRating) {
+    delete state.mistakes[wordId];
+    saveState();
+    renderUnitsToolbar();
+    toast(`🎉 Mastered! "${wordLabel}" graduated from Mistakes`, "success");
+    return;
+  }
+
+  const entry = state.mistakes[wordId];
+  entry.streak = (entry.streak || 0) + 1;
+
+  if (entry.streak >= 2) {
+    delete state.mistakes[wordId];
+    saveState();
+    renderUnitsToolbar();
+    toast(`🎉 2x Correct! "${wordLabel}" graduated from Mistakes`, "success");
+  } else {
+    saveState();
+    renderUnitsToolbar();
+    toast(`👍 Good! "${wordLabel}" streak: ${entry.streak}/2 to graduate`, "info");
+  }
+}
+
+function toggleManualMistake(wordId) {
+  const ref = findWordRef(wordId);
+  if (!ref) return;
+
+  if (state.mistakes[wordId]) {
+    delete state.mistakes[wordId];
+    toast(`Removed "${ref.wordObj.word}" from Mistakes`, "info");
+  } else {
+    state.mistakes[wordId] = { unitId: ref.unitId, streak: 0, addedAt: Date.now() };
+    toast(`⚠️ Marked "${ref.wordObj.word}" for Mistakes review`, "warning");
+  }
+  saveState();
+  renderUnitsToolbar();
+  renderExplorer();
+  if (currentMode === "flashcards") renderFlashcard();
+}
+
+function clearAllMistakes() {
+  const count = getMistakesCount();
+  if (count === 0) return toast("Mistakes deck is already empty!", "info");
+  if (!confirm(`Clear all ${count} words from the Mistakes deck?`)) return;
+
+  state.mistakes = {};
+  flashcardIndex = 0;
+  saveState();
+  renderUnitsToolbar();
+
+  if (state.activeUnitId === "mistakes") {
+    if (currentMode === "flashcards") renderFlashcard();
+    else if (currentMode === "quiz") startActiveQuiz();
+    else renderExplorer();
+  } else {
+    renderExplorer();
+  }
+  toast("🧹 All recorded mistakes cleared!", "info");
+}
+
+// ════════════════════════════════════════════════════
+//  3. HEADER STATS & UNITS TOOLBAR
+// ════════════════════════════════════════════════════
+
+function updateHeaderStats() {
+  const activeWords = getActiveWords();
+  const allWords = getAllWordsWithUnit();
+  const mistakesCount = getMistakesCount();
+
+  $("#statUnitCount").textContent = activeWords.length;
+  $("#statTotalCount").textContent = allWords.length;
+  $("#statMistakesCount").textContent = mistakesCount;
+
+  const avg = activeWords.length
+    ? Math.round(activeWords.reduce((s, w) => s + (w.mastery || 0), 0) / activeWords.length)
+    : 0;
+  $("#statMastery").textContent = `${avg}%`;
+
+  const currentName = getActiveUnitName();
+  const fcBadge = $("#flashcardUnitName");
+  if (fcBadge) fcBadge.textContent = currentName;
+  const badgeWrap = $("#activeUnitBadgeWrap");
+  if (badgeWrap) badgeWrap.classList.toggle("mistakes-mode", state.activeUnitId === "mistakes");
+
+  const quizBadge = $("#quizUnitName");
+  if (quizBadge) quizBadge.textContent = currentName;
+  const arenaLabel = $("#quizArenaDeckLabel");
+  if (arenaLabel) arenaLabel.textContent = currentName;
+
+  const tableTag = $("#tableDeckTag");
+  if (tableTag) {
+    tableTag.textContent = currentName;
+    tableTag.classList.toggle("mistakes-mode", state.activeUnitId === "mistakes");
+  }
+  const bulkTarget = $("#bulkTargetUnitName");
+  if (bulkTarget) bulkTarget.textContent = currentName;
+}
+
+function renderUnitsToolbar() {
+  const container = $("#unitsTabList");
+  container.innerHTML = "";
+
+  // 1. Only Top-Level Units in Sidebar ("Your folders")
+  getTopLevelUnits().forEach((unit) => {
+    const parts = getChildParts(unit.id);
+    const totalCount = getUnitTotalWordCount(unit.id);
+    const isUnitActive = state.activeUnitId === unit.id;
+    const isChildActive = parts.some((p) => p.id === state.activeUnitId);
+
+    const group = document.createElement("div");
+    group.className = `sidebar-unit-group ${isUnitActive ? "active" : ""} ${isChildActive ? "child-active" : ""}`;
+
+    const btn = document.createElement("button");
+    btn.className = `sidebar-item sidebar-unit-item ${isUnitActive ? "active" : isChildActive ? "child-active" : ""}`;
+    btn.title = unit.name;
+    btn.setAttribute("data-tooltip", `${unit.name} (${totalCount})`);
+    const folderIconSvg = `
+      <svg class="nav-svg-icon unit-folder-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+      </svg>
+    `;
+    btn.innerHTML = `
+      <span class="nav-icon unit-folder-icon-wrap">${folderIconSvg}</span>
+      <span class="nav-label">${escapeHTML(unit.name)}</span>
+      <span class="sidebar-count-pill">${totalCount}</span>
+    `;
+    btn.addEventListener("click", () => {
+      selectUnit(unit.id);
+      closeMobileSidebar();
+    });
+    if (parts.length > 0) {
+      const row = document.createElement("div");
+      row.className = "sidebar-unit-row";
+
+      const isExpanded = !collapsedUnits.has(unit.id);
+      const chevron = document.createElement("button");
+      chevron.className = `unit-chevron ${isExpanded ? "expanded" : ""}`;
+      chevron.setAttribute("aria-label", "Toggle folder");
+      chevron.innerHTML = `
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      `;
+      chevron.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const outer = group.querySelector(".sidebar-unit-parts-outer");
+        if (collapsedUnits.has(unit.id)) {
+          collapsedUnits.delete(unit.id);
+          chevron.classList.add("expanded");
+          if (outer) outer.classList.remove("collapsed-parts");
+        } else {
+          collapsedUnits.add(unit.id);
+          chevron.classList.remove("expanded");
+          if (outer) outer.classList.add("collapsed-parts");
+        }
+      });
+
+      row.appendChild(chevron);
+      row.appendChild(btn);
+      group.appendChild(row);
+
+      const partsOuter = document.createElement("div");
+      partsOuter.className = `sidebar-unit-parts-outer ${isExpanded ? "" : "collapsed-parts"}`;
+      const partsInner = document.createElement("div");
+      partsInner.className = "sidebar-unit-parts-inner";
+
+      const partsWrap = document.createElement("div");
+      const activePartIndex = parts.findIndex((p) => p.id === state.activeUnitId);
+      partsWrap.className = `sidebar-unit-parts ${isChildActive ? "has-active-child" : ""}`;
+      if (activePartIndex !== -1) {
+        const reachPx = activePartIndex * 38 + 20;
+        partsWrap.style.setProperty("--active-part-reach", `${reachPx}px`);
+        partsWrap.dataset.activePartIndex = activePartIndex;
+      }
+
+      parts.forEach((part, index) => {
+        const isPartActive = state.activeUnitId === part.id;
+        const pBtn = document.createElement("button");
+        pBtn.className = `sidebar-item sidebar-part-item ${isPartActive ? "active" : ""}`;
+        pBtn.title = part.name;
+        pBtn.dataset.partIndex = index;
+        pBtn.innerHTML = `
+          <span class="sidebar-part-dot"></span>
+          <span class="nav-label">${escapeHTML(part.name)}</span>
+          <span class="sidebar-count-pill">${part.words.length}</span>
+        `;
+        pBtn.addEventListener("click", () => {
+          selectUnit(part.id);
+          closeMobileSidebar();
+        });
+        partsWrap.appendChild(pBtn);
+      });
+
+      const addPartBtn = document.createElement("button");
+      addPartBtn.className = "sidebar-add-part-btn";
+      addPartBtn.innerHTML = `
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>Add Part</span>
+      `;
+      addPartBtn.addEventListener("click", () => createNewPart(unit.id));
+      partsWrap.appendChild(addPartBtn);
+
+      partsInner.appendChild(partsWrap);
+      partsOuter.appendChild(partsInner);
+      group.appendChild(partsOuter);
+    } else {
+      group.appendChild(btn);
+    }
+
+    container.appendChild(group);
+  });
+
+  // 2. Permanent Smart Mistakes & All Units sidebar buttons
+  const mistakesCount = getMistakesCount();
+  const totalAll = getAllWordsWithUnit().length;
+  const sideMistakes = $("#side-mistakes");
+  const sideAll = $("#side-all");
+  if (sideMistakes) {
+    sideMistakes.classList.toggle("active", state.activeUnitId === "mistakes");
+    const mCountEl = $("#sideMistakesCount");
+    if (mCountEl) mCountEl.textContent = mistakesCount;
+  }
+  if (sideAll) {
+    sideAll.classList.toggle("active", state.activeUnitId === "all");
+    const aCountEl = $("#sideAllCount");
+    if (aCountEl) aCountEl.textContent = totalAll;
+  }
+
+  // 3. Header active deck title
+  const headerTitleEl = $("#headerActiveUnitTitle");
+  if (headerTitleEl) {
+    headerTitleEl.textContent = getActiveUnitName();
+  }
+
+  // 4. Unit Parts Bar (below header when active unit or its parent has parts)
+  const activeParentId =
+    state.activeUnitId === "all" || state.activeUnitId === "mistakes"
+      ? null
+      : getParentUnitId(state.activeUnitId);
+  renderUnitPartsBar(activeParentId);
+
+  // Action buttons visibility
+  const normalActions = $("#unitsActionsNormal");
+  const mistakesActions = $("#unitsActionsMistakes");
+  if (state.activeUnitId === "mistakes") {
+    normalActions.classList.add("hidden");
+    mistakesActions.classList.remove("hidden");
+  } else {
+    normalActions.classList.remove("hidden");
+    mistakesActions.classList.add("hidden");
+    const isAll = state.activeUnitId === "all";
+    const hasActiveUnit = !!state.units[state.activeUnitId];
+    const addPartHeaderBtn = $("#btnAddPartToUnit");
+    if (addPartHeaderBtn) addPartHeaderBtn.style.display = isAll || !hasActiveUnit ? "none" : "inline-flex";
+    if ($("#btnRenameActiveUnit")) $("#btnRenameActiveUnit").style.display = isAll || !hasActiveUnit ? "none" : "inline-flex";
+    if ($("#btnClearActiveUnitWords")) $("#btnClearActiveUnitWords").style.display = isAll || !hasActiveUnit ? "none" : "inline-flex";
+    if ($("#btnDeleteActiveUnit")) $("#btnDeleteActiveUnit").style.display = isAll || !hasActiveUnit ? "none" : "inline-flex";
+    const isPart = !!(state.units[state.activeUnitId] && state.units[state.activeUnitId].parentId);
+    const delSpan = $("#btnDeleteActiveUnit span");
+    if (delSpan) delSpan.textContent = isPart ? "Delete Part" : "Delete Unit";
+  }
+
+  populateAddWordUnitSelect();
+}
+
+function renderUnitPartsBar(parentId) {
+  const bar = $("#unitPartsBar");
+  if (!bar) return;
+
+  if (!parentId || state.activeUnitId === "all" || state.activeUnitId === "mistakes") {
+    bar.classList.add("hidden");
+    bar.innerHTML = "";
+    return;
+  }
+
+  const parentUnit = state.units[parentId];
+  const parts = getChildParts(parentId);
+  if (!parentUnit || parts.length === 0) {
+    bar.classList.add("hidden");
+    bar.innerHTML = "";
+    return;
+  }
+
+  bar.classList.remove("hidden");
+  bar.innerHTML = `<span class="parts-bar-label">${escapeHTML(parentUnit.name)}:</span>`;
+
+  const allPartPill = document.createElement("button");
+  allPartPill.className = `part-pill ${state.activeUnitId === parentUnit.id ? "active" : ""}`;
+  allPartPill.innerHTML = `<span>All Parts</span><span class="part-pill-count">(${getUnitTotalWordCount(parentUnit.id)})</span>`;
+  allPartPill.addEventListener("click", () => selectUnit(parentUnit.id));
+  bar.appendChild(allPartPill);
+
+  parts.forEach((part) => {
+    const pill = document.createElement("button");
+    pill.className = `part-pill ${state.activeUnitId === part.id ? "active" : ""}`;
+    pill.innerHTML = `<span>${escapeHTML(part.name)}</span><span class="part-pill-count">(${part.words.length})</span>`;
+    pill.addEventListener("click", () => selectUnit(part.id));
+    bar.appendChild(pill);
+  });
+
+  const addBtn = document.createElement("button");
+  addBtn.className = "part-pill add-part";
+  addBtn.textContent = "+ Add Part";
+  addBtn.addEventListener("click", () => createNewPart(parentUnit.id));
+  bar.appendChild(addBtn);
+}
+
+function closeMobileSidebar() {
+  const sidebar = $("#appSidebar");
+  const backdrop = $("#sidebarBackdrop");
+  if (sidebar) sidebar.classList.remove("mobile-open");
+  if (backdrop) backdrop.classList.remove("open");
+}
+
+let activeExplorerFolder = null;
+
+function selectUnit(unitId) {
+  state.activeUnitId = unitId;
+  activeExplorerFolder = null;
+  flashcardIndex = 0;
+  saveState();
+  renderUnitsToolbar();
+  renderFlashcard();
+  if (currentMode === "quiz") startActiveQuiz();
+  else if (currentMode === "manage") renderExplorer();
+  toast(`📂 Switched to: ${getActiveUnitName()}`, unitId === "mistakes" ? "warning" : "info");
+}
+
+let unitModalCallback = null;
+
+function openUnitDialog({ title, subtitle, defaultValue = "", placeholder = "", onConfirm }) {
+  const backdrop = $("#unitModalBackdrop");
+  const titleEl = $("#unitModalTitle");
+  const subEl = $("#unitModalSub");
+  const inputEl = $("#unitModalInput");
+  if (!backdrop || !inputEl) return;
+
+  titleEl.textContent = title;
+  subEl.textContent = subtitle;
+  inputEl.value = defaultValue;
+  inputEl.placeholder = placeholder;
+  unitModalCallback = onConfirm;
+
+  backdrop.classList.remove("hidden");
+  setTimeout(() => {
+    inputEl.focus();
+    inputEl.select();
+  }, 40);
+}
+
+function closeUnitDialog() {
+  const backdrop = $("#unitModalBackdrop");
+  if (backdrop) backdrop.classList.add("hidden");
+  unitModalCallback = null;
+}
+
+function createNewUnit() {
+  openUnitDialog({
+    title: "Create New Unit",
+    subtitle: "Organize a new vocabulary deck / folder",
+    placeholder: "e.g. Unit 1, Business Vocab...",
+    onConfirm: (clean) => {
+      const unitKey = "unit_" + Date.now().toString(36);
+      state.units[unitKey] = { id: unitKey, name: clean, createdAt: Date.now(), words: [] };
+      state.activeUnitId = unitKey;
+      flashcardIndex = 0;
+      saveState();
+      renderUnitsToolbar();
+      renderExplorer();
+      renderFlashcard();
+      toast(`✅ Created unit "${clean}"`, "success");
+    }
+  });
+}
+
+function renameActiveUnit() {
+  if (state.activeUnitId === "all" || state.activeUnitId === "mistakes") {
+    return toast("⚠️ Select a specific unit to rename", "error");
+  }
+  const unit = state.units[state.activeUnitId];
+  if (!unit) return;
+
+  openUnitDialog({
+    title: "Rename Folder",
+    subtitle: `Current name: ${unit.name}`,
+    defaultValue: unit.name,
+    placeholder: "Enter new name...",
+    onConfirm: (clean) => {
+      unit.name = clean;
+      saveState();
+      renderUnitsToolbar();
+      renderExplorer();
+      updateHeaderStats();
+      toast(`✏️ Renamed to "${unit.name}"`, "success");
+    }
+  });
+}
+
+function createNewPart(parentId) {
+  const targetParentId = getParentUnitId(parentId || state.activeUnitId);
+  const parentUnit = state.units[targetParentId];
+  if (!parentUnit) return toast("⚠️ Select a unit first to add a part inside it", "error");
+
+  const nextNum = getChildParts(targetParentId).length + 1;
+  openUnitDialog({
+    title: `Add Part to ${parentUnit.name}`,
+    subtitle: "Create a sub-deck inside this unit",
+    defaultValue: `Part ${nextNum}`,
+    placeholder: `e.g. Part ${nextNum}, Lesson 1-2`,
+    onConfirm: (clean) => {
+      const partKey = "part_" + Date.now().toString(36);
+      state.units[partKey] = {
+        id: partKey,
+        name: clean,
+        parentId: targetParentId,
+        createdAt: Date.now(),
+        words: []
+      };
+      collapsedUnits.delete(targetParentId);
+      state.activeUnitId = partKey;
+      flashcardIndex = 0;
+      saveState();
+      renderUnitsToolbar();
+      renderExplorer();
+      renderFlashcard();
+      toast(`✅ Added "${clean}" inside "${parentUnit.name}"`, "success");
+    }
+  });
+}
+
+function clearActiveUnitWords() {
+  if (state.activeUnitId === "all" || state.activeUnitId === "mistakes") return;
+  const unit = state.units[state.activeUnitId];
+  if (!unit) return;
+  const parts = !unit.parentId ? getChildParts(unit.id) : [];
+  const totalCount = unit.words.length + parts.reduce((acc, p) => acc + p.words.length, 0);
+  if (totalCount === 0) return toast("This unit is already empty!", "info");
+  if (!confirm(`Clear all ${totalCount} words in "${getActiveUnitName()}"?\nThe unit structure will remain.`)) return;
+
+  unit.words.forEach((w) => delete state.mistakes[w.id]);
+  unit.words = [];
+  parts.forEach((p) => {
+    p.words.forEach((w) => delete state.mistakes[w.id]);
+    p.words = [];
+  });
+  flashcardIndex = 0;
+  saveState();
+  renderUnitsToolbar();
+  renderExplorer();
+  renderFlashcard();
+  toast(`🧹 Cleared words in "${unit.name}"`, "info");
+}
+
+function deleteActiveUnit() {
+  if (state.activeUnitId === "all" || state.activeUnitId === "mistakes") return;
+  const unit = state.units[state.activeUnitId];
+  if (!unit) return;
+
+  if (unit.parentId && state.units[unit.parentId]) {
+    const parentId = unit.parentId;
+    if (!confirm(`Delete part "${unit.name}" (${unit.words.length} words) from "${state.units[parentId].name}"?`)) return;
+    unit.words.forEach((w) => delete state.mistakes[w.id]);
+    delete state.units[state.activeUnitId];
+    state.activeUnitId = parentId;
+  } else {
+    const parts = getChildParts(unit.id);
+    const totalCount = getUnitTotalWordCount(unit.id);
+    const extra = parts.length > 0 ? ` and its ${parts.length} parts` : "";
+    if (!confirm(`Permanently delete "${unit.name}"${extra} (${totalCount} words)?`)) return;
+
+    unit.words.forEach((w) => delete state.mistakes[w.id]);
+    parts.forEach((p) => {
+      p.words.forEach((w) => delete state.mistakes[w.id]);
+      delete state.units[p.id];
+    });
+    delete state.units[state.activeUnitId];
+    state.activeUnitId = getFirstAvailableUnitId();
+  }
+
+  flashcardIndex = 0;
+  saveState();
+  renderUnitsToolbar();
+  renderExplorer();
+  renderFlashcard();
+  toast(`🗑️ Deleted "${unit.name}"`, "error");
+}
+
+function populateAddWordUnitSelect() {
+  const sel = $("#inputUnitSelect");
+  if (!sel) return;
+  sel.innerHTML = "";
+  getTopLevelUnits().forEach((u) => {
+    const opt = document.createElement("option");
+    opt.value = u.id;
+    opt.textContent = `${u.name} (${u.words.length} words)`;
+    sel.appendChild(opt);
+
+    getChildParts(u.id).forEach((p) => {
+      const pOpt = document.createElement("option");
+      pOpt.value = p.id;
+      pOpt.textContent = `  ↳ ${u.name} › ${p.name} (${p.words.length} words)`;
+      sel.appendChild(pOpt);
+    });
+  });
+  if (state.activeUnitId !== "all" && state.activeUnitId !== "mistakes" && state.units[state.activeUnitId]) {
+    sel.value = state.activeUnitId;
+  } else {
+    sel.value = getFirstAvailableUnitId();
+  }
+}
+
+// ════════════════════════════════════════════════════
+//  4. FLASHCARDS STUDIO (3D CARD + AUTO-VOICE + DECK QUEUE)
+// ════════════════════════════════════════════════════
+
+function updateAutoAudioUI() {
+  const label = $("#autoAudioLabel");
+  const btn = $("#btnAutoAudio");
+  if (label) label.textContent = state.autoPlayAudio ? "ON" : "OFF";
+  if (btn) btn.classList.toggle("voice-off", !state.autoPlayAudio);
+}
+
+function toggleAutoPlayAudio() {
+  state.autoPlayAudio = !state.autoPlayAudio;
+  saveState();
+  updateAutoAudioUI();
+  toast(`🔊 Auto-Voice is now ${state.autoPlayAudio ? "ON" : "OFF"}`, "info");
+}
+
+function shuffleFlashcards() {
+  if (state.activeUnitId === "all" || state.activeUnitId === "mistakes") {
+    return toast("⚠️ Select a specific unit to shuffle its order", "warning");
+  }
+  const unit = state.units[state.activeUnitId];
+  if (!unit || unit.words.length < 2) return toast("Need at least 2 words to shuffle", "info");
+
+  unit.words = shuffle(unit.words);
+  flashcardIndex = 0;
+  saveState();
+  renderFlashcard();
+  toast("🔀 Cards shuffled!", "info");
+}
+
+function renderFlashcard() {
+  const words = getActiveWords();
+  updateAutoAudioUI();
+
+  isCardFlipped = false;
+  $("#cardBody").classList.remove("flipped");
+  $("#queueCountBadge").textContent = `${words.length} Words`;
+
+  if (words.length === 0) {
+    if (state.activeUnitId === "mistakes") {
+      $("#cardWord").textContent = "No Mistakes! 🎉";
+      $("#cardType").textContent = "ALL CLEAR";
+      $("#cardMeaning").textContent = "لا توجد أخطاء حالياً — ممتاز!";
+      $("#exampleEn").textContent = "You have cleared all mistakes in this review deck.";
+      $("#exampleAr").textContent = "لقد أتقنت جميع الكلمات الخاطئة.";
+    } else {
+      $("#cardWord").textContent = "Empty Unit";
+      $("#cardType").textContent = "INFO";
+      $("#cardMeaning").textContent = "Add words or import JSON to start";
+      $("#exampleEn").textContent = "No cards in this unit yet.";
+      $("#exampleAr").textContent = "لا توجد بطاقات في هذه الوحدة.";
+    }
+    $("#cardWordSmall").textContent = "—";
+    $("#cardMasteryBadge").textContent = "0% Mastery";
+    $("#fcMistakeIndicator").classList.add("hidden");
+    $("#progressFill").style.width = "0%";
+    $("#progressText").textContent = "0 / 0 Mastered (0%)";
+    $("#cardCounter").textContent = "Card 0 of 0";
+    renderDeckQueue([]);
+    return;
+  }
+
+  if (flashcardIndex < 0) flashcardIndex = words.length - 1;
+  if (flashcardIndex >= words.length) flashcardIndex = 0;
+
+  const current = words[flashcardIndex];
+
+  $("#cardWord").textContent = current.word;
+  $("#cardWordSmall").textContent = current.word;
+  $("#cardType").textContent = (current.type || "word").toUpperCase();
+  $("#cardMasteryBadge").textContent = `${current.mastery || 0}% Mastery`;
+  $("#cardMeaning").textContent = current.meaning;
+  $("#exampleEn").textContent = current.example ? `"${current.example}"` : `"Practice makes ${current.word} permanent."`;
+  $("#exampleAr").textContent = current.exampleAr ? `"${current.exampleAr}"` : "";
+
+  $("#fcMistakeIndicator").classList.toggle("hidden", !current._isMistake);
+
+  const masteredCount = words.filter((w) => (w.mastery || 0) >= 80).length;
+  const pct = Math.round((masteredCount / words.length) * 100);
+  $("#progressFill").style.width = `${pct}%`;
+  $("#progressText").textContent = `${masteredCount} / ${words.length} Mastered (${pct}%)`;
+  $("#cardCounter").textContent = `Card ${flashcardIndex + 1} of ${words.length}`;
+
+  renderDeckQueue(words);
+}
+
+function renderDeckQueue(words) {
+  const container = $("#fcMiniQueue");
+  container.innerHTML = "";
+
+  if (words.length === 0) {
+    container.innerHTML = `<div style="text-align:center;color:var(--text-secondary);font-size:0.78rem;padding:40px 10px;">No words in this deck.</div>`;
+    return;
+  }
+
+  words.forEach((w, idx) => {
+    const m = w.mastery || 0;
+    const dotClass = m >= 80 ? "high" : m >= 40 ? "mid" : "low";
+    const isActive = idx === flashcardIndex;
+
+    const item = document.createElement("div");
+    item.className = `queue-item ${isActive ? "active" : ""}`;
+    item.innerHTML = `
+      <div class="queue-item-left">
+        <span class="queue-dot ${dotClass}"></span>
+        <div class="queue-text">
+          <div class="queue-word">${escapeHTML(w.word)} ${w._isMistake ? "⚠️" : ""}</div>
+          <div class="queue-meaning">${escapeHTML(w.meaning)}</div>
+        </div>
+      </div>
+      <div class="queue-item-right">
+        <span class="queue-pct">${m}%</span>
+        <button class="queue-speak-btn" title="Speak">🔊</button>
+      </div>
+    `;
+
+    item.addEventListener("click", () => {
+      flashcardIndex = idx;
+      renderFlashcard();
+      if (state.autoPlayAudio) playSpeech(w.word);
+    });
+
+    item.querySelector(".queue-speak-btn").addEventListener("click", (e) => {
+      e.stopPropagation();
+      playSpeech(w.word);
+    });
+
+    container.appendChild(item);
+  });
+
+  const activeEl = container.querySelector(".queue-item.active");
+  if (activeEl) activeEl.scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+
+function flipFlashcard() {
+  const words = getActiveWords();
+  if (words.length === 0) return;
+  isCardFlipped = !isCardFlipped;
+  $("#cardBody").classList.toggle("flipped", isCardFlipped);
+  if (isCardFlipped && state.autoPlayAudio) {
+    playSpeech(words[flashcardIndex].word);
+  }
+}
+
+function navigateCard(delta) {
+  const words = getActiveWords();
+  if (words.length === 0) return;
+  flashcardIndex = (flashcardIndex + delta + words.length) % words.length;
+  renderFlashcard();
+  if (state.autoPlayAudio) {
+    const newWords = getActiveWords();
+    if (newWords[flashcardIndex]) playSpeech(newWords[flashcardIndex].word);
+  }
+}
+
+function rateFlashcard(rating) {
+  const words = getActiveWords();
+  if (words.length === 0) return;
+
+  const current = words[flashcardIndex];
+  const ref = findWordRef(current.id);
+  if (ref) {
+    if (rating === "hard") {
+      ref.wordObj.mastery = Math.max(0, (ref.wordObj.mastery || 0) - 15);
+      recordMistake(current.id, ref.unitId, false);
+    } else if (rating === "good") {
+      ref.wordObj.mastery = Math.min(100, (ref.wordObj.mastery || 0) + 15);
+      toast(`🤔 Good! "${current.word}" +15% mastery`, "info");
+    } else if (rating === "easy") {
+      ref.wordObj.mastery = Math.min(100, (ref.wordObj.mastery || 0) + 30);
+      if (state.mistakes[current.id]) {
+        recordSuccess(current.id, true);
+      } else {
+        toast(`😎 Easy! "${current.word}" +30% mastery`, "success");
+      }
+    }
+    saveState();
+  }
+
+  navigateCard(1);
+}
+
+function playSpeech(text, rate = 0.88) {
+  if (!text || !window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'en-US';
+  utter.rate = rate;
+  window.speechSynthesis.speak(utter);
+}
+
+// ── Pocket Audio Loop (Hands-free Flashcards) ──
+function stopPocketLoop() {
+  pocketLoopActive = false;
+  clearTimeout(pocketLoopTimer);
+  const lbl = $("#pocketLoopLabel");
+  const btn = $("#btnPocketLoop");
+  if (lbl) lbl.textContent = "OFF";
+  if (btn) btn.classList.remove("pocket-active");
+}
+
+function togglePocketLoop() {
+  if (pocketLoopActive) {
+    stopPocketLoop();
+    toast("⏹ Pocket Loop stopped", "info");
+    return;
+  }
+  const words = getActiveWords();
+  if (words.length === 0) return toast("⚠️ Add words to this deck first!", "warning");
+
+  pocketLoopActive = true;
+  const lbl = $("#pocketLoopLabel");
+  const btn = $("#btnPocketLoop");
+  if (lbl) lbl.textContent = "ON";
+  if (btn) btn.classList.add("pocket-active");
+  toast("🎧 Pocket Loop started — hands-free audio review!", "success");
+  runPocketLoopStep();
+}
+
+function runPocketLoopStep() {
+  if (!pocketLoopActive) return;
+  const words = getActiveWords();
+  if (!words.length) return stopPocketLoop();
+
+  isCardFlipped = false;
+  $("#cardBody").classList.remove("flipped");
+  const current = words[flashcardIndex];
+  playSpeech(current.word, 0.9);
+
+  pocketLoopTimer = setTimeout(() => {
+    if (!pocketLoopActive) return;
+    isCardFlipped = true;
+    $("#cardBody").classList.add("flipped");
+    if (current.example) playSpeech(current.example, 0.9);
+
+    pocketLoopTimer = setTimeout(() => {
+      if (!pocketLoopActive) return;
+      flashcardIndex = (flashcardIndex + 1) % words.length;
+      renderFlashcard();
+      runPocketLoopStep();
+    }, 3600);
+  }, 2600);
+}
+
+// ── Active Context Builder (Signature Feature) ──
+function rollContextTargetWords() {
+  const pool = getActiveWords().length >= 3 ? getActiveWords() : getAllWordsWithUnit();
+  const input = $("#contextSentenceInput");
+  if (input) input.value = "";
+
+  if (pool.length < 3) {
+    contextTargetWords = pool;
+  } else {
+    contextTargetWords = shuffle([...pool]).slice(0, 3);
+  }
+  renderContextBuilder();
+}
+
+function renderContextBuilder() {
+  const chipsRow = $("#contextChipsRow");
+  const statusLbl = $("#contextStatusLabel");
+  const input = $("#contextSentenceInput");
+  if (!chipsRow) return;
+
+  if (contextTargetWords.length === 0) {
+    chipsRow.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--text-secondary);padding:20px;">Add at least 3 words to your deck to start the Context Builder!</div>`;
+    if (statusLbl) statusLbl.textContent = "0 / 3 Words Used";
+    renderSavedContextSentences();
+    return;
+  }
+
+  const typed = (input ? input.value : "").toLowerCase();
+  let matchedCount = 0;
+
+  chipsRow.innerHTML = "";
+  contextTargetWords.forEach((w) => {
+    const cleanWord = w.word.toLowerCase().trim();
+    const stem = cleanWord.length > 4 ? cleanWord.slice(0, cleanWord.length - 1) : cleanWord;
+    const isMatched = typed.includes(cleanWord) || (stem.length >= 4 && typed.includes(stem));
+    if (isMatched) matchedCount++;
+
+    const chip = document.createElement("div");
+    chip.className = `context-word-chip ${isMatched ? "matched" : ""}`;
+    chip.innerHTML = `
+      <div class="context-chip-en">${isMatched ? "✅ " : ""}${escapeHTML(w.word)}</div>
+      <div class="context-chip-ar">${escapeHTML(w.meaning)}</div>
+    `;
+    chipsRow.appendChild(chip);
+  });
+
+  if (statusLbl) {
+    statusLbl.textContent = `${matchedCount} / ${contextTargetWords.length} Words Used`;
+  }
+  renderSavedContextSentences();
+}
+
+function saveContextBuilderSentence() {
+  const input = $("#contextSentenceInput");
+  if (!input) return;
+  const text = input.value.trim();
+  if (text.length < 8) {
+    return toast("⚠️ Write a complete English sentence first!", "warning");
+  }
+  if (contextTargetWords.length === 0) return;
+
+  // Boost mastery for matched target words
+  const lower = text.toLowerCase();
+  let boosted = 0;
+  contextTargetWords.forEach((w) => {
+    const ref = findWordRef(w.id);
+    if (ref && lower.includes(w.word.toLowerCase().slice(0, Math.max(3, w.word.length - 1)))) {
+      ref.wordObj.mastery = Math.min(100, (ref.wordObj.mastery || 0) + 15);
+      boosted++;
+    }
+  });
+
+  state.contextSentences.unshift({
+    text,
+    words: contextTargetWords.map((w) => w.word),
+    date: new Date().toLocaleDateString()
+  });
+
+  saveState();
+  toast(`✨ Sentence saved! Boosted mastery for ${boosted} word(s)!`, "success");
+  rollContextTargetWords();
+}
+
+function renderSavedContextSentences() {
+  const box = $("#savedSentencesBox");
+  if (!box) return;
+  if (!state.contextSentences || state.contextSentences.length === 0) {
+    box.innerHTML = `<div style="font-size:0.8rem;color:var(--text-secondary);">No saved sentences yet. Write your first sentence above!</div>`;
+    return;
+  }
+
+  box.innerHTML = `<div style="font-size:0.78rem;font-weight:800;color:var(--accent-cyan);text-transform:uppercase;letter-spacing:0.06em;">📝 Your Saved Context Sentences</div>` +
+    state.contextSentences.slice(0, 8).map((s) => `
+      <div class="saved-sentence-card">
+        <div class="saved-sentence-text">"${escapeHTML(s.text)}"</div>
+        <div class="saved-sentence-meta">Words: ${s.words.map(escapeHTML).join(" • ")} • ${escapeHTML(s.date || "")}</div>
+      </div>
+    `).join("");
+}
+
+// ════════════════════════════════════════════════════
+//  5. PRACTICE ARENA (4 MODES: MCQ, TRANSLATE, SPELLING, SPEED MATCH)
+// ════════════════════════════════════════════════════
+
+function updateArenaHeader(progressText) {
+  $("#arenaStreak").textContent = `🔥 ${arenaStreak} Streak`;
+  $("#arenaScore").textContent = `✅ Score: ${arenaScore}`;
+  $("#quizArenaProgress").textContent = progressText;
+}
+
+function handleQuizAttempt(wordObj, isCorrect) {
+  const ref = findWordRef(wordObj.id);
+  if (isCorrect) {
+    arenaScore += 10;
+    arenaStreak++;
+    if (ref) {
+      ref.wordObj.mastery = Math.min(100, (ref.wordObj.mastery || 0) + 10);
+      saveState();
+    }
+    recordSuccess(wordObj.id, false);
+  } else {
+    arenaStreak = 0;
+    if (ref) {
+      ref.wordObj.mastery = Math.max(0, (ref.wordObj.mastery || 0) - 10);
+      saveState();
+    }
+    recordMistake(wordObj.id, wordObj._unitId, false);
+  }
+  updateArenaHeader($("#quizArenaProgress").textContent);
+}
+
+function startActiveQuiz() {
+  if (activeQuizType === "mcq") startMcqQuiz();
+  else if (activeQuizType === "translate") startTranslateQuiz();
+  else if (activeQuizType === "spelling") startSpellingQuiz();
+  else if (activeQuizType === "match") startMatchGame();
+}
+
+// ── 5A. Multiple Choice ──
+function startMcqQuiz() {
+  const words = getActiveWords();
+  if (words.length < 2) {
+    $("#mcqWordType").textContent = "INFO";
+    $("#mcqQuestion").textContent = state.activeUnitId === "mistakes" && words.length === 0
+      ? "🎉 No mistakes recorded! Great job!"
+      : "Need at least 2 words in this deck to start MCQ!";
+    $("#mcqOptions").innerHTML = "";
+    $("#btnNextMcq").style.display = "none";
+    $("#mcqScore").textContent = "0 / 0 Correct";
+    updateArenaHeader("Waiting for words");
+    return;
+  }
+  mcqList = shuffle([...words]);
+  mcqIndex = 0;
+  mcqScore = 0;
+  mcqTotal = 0;
+  mcqAnswered = false;
+  showMcqQuestion();
+}
+
+function showMcqQuestion() {
+  if (mcqIndex >= mcqList.length) {
+    $("#mcqWordType").textContent = "DONE";
+    $("#mcqQuestion").textContent = `🎉 Round Complete! ${mcqScore} / ${mcqTotal} Correct`;
+    $("#mcqOptions").innerHTML = "";
+    $("#btnNextMcq").style.display = "none";
+    updateArenaHeader("Round finished");
+    return;
+  }
+
+  mcqAnswered = false;
+  $("#btnNextMcq").style.display = "none";
+  const current = mcqList[mcqIndex];
+
+  $("#mcqWordType").textContent = (current.type || "Word").toUpperCase();
+  $("#mcqQuestion").textContent = current.meaning;
+  updateArenaHeader(`Question ${mcqIndex + 1} of ${mcqList.length}`);
+
+  const pool = getActiveWords().length >= 4 ? getActiveWords() : getAllWordsWithUnit();
+  const distractors = shuffle(pool.filter((w) => w.word.toLowerCase() !== current.word.toLowerCase()))
+    .slice(0, 3)
+    .map((w) => w.word);
+
+  const options = shuffle([current.word, ...distractors]);
+  const container = $("#mcqOptions");
+  container.innerHTML = "";
+
+  options.forEach((opt) => {
+    const btn = document.createElement("button");
+    btn.className = "mcq-opt";
+    btn.textContent = opt;
+    btn.addEventListener("click", () => handleMcqSelection(btn, opt, current));
+    container.appendChild(btn);
+  });
+
+  $("#mcqScore").textContent = `${mcqScore} / ${mcqTotal} Correct`;
+}
+
+function handleMcqSelection(btn, chosen, current) {
+  if (mcqAnswered) return;
+  mcqAnswered = true;
+  mcqTotal++;
+
+  $$(".mcq-opt").forEach((b) => b.classList.add("disabled"));
+  playSpeech(current.word);
+
+  const isCorrect = chosen === current.word;
+  if (isCorrect) {
+    btn.classList.add("correct");
+    mcqScore++;
+  } else {
+    btn.classList.add("wrong");
+    $$(".mcq-opt").forEach((b) => {
+      if (b.textContent === current.word) b.classList.add("correct");
+    });
+  }
+
+  handleQuizAttempt(current, isCorrect);
+  $("#mcqScore").textContent = `${mcqScore} / ${mcqTotal} Correct`;
+  $("#btnNextMcq").style.display = "inline-block";
+}
+
+// ── 5B. Translate (AR ➔ EN) ──
+function startTranslateQuiz() {
+  const words = getActiveWords();
+  if (words.length === 0) {
+    $("#translateType").textContent = "INFO";
+    $("#translateQuestion").textContent = state.activeUnitId === "mistakes"
+      ? "🎉 No mistakes recorded! Great job!"
+      : "Add words to this deck first!";
+    $("#translateInput").style.display = "none";
+    $("#btnCheckTranslate").style.display = "none";
+    $("#btnTranslateHint").style.display = "none";
+    $("#btnTranslateListen").classList.add("hide");
+    $("#btnNextTranslate").style.display = "none";
+    $("#translateHintDisplay").classList.add("hidden");
+    $("#translateFeedback").textContent = "";
+    $("#translateExampleFeedback").textContent = "";
+    $("#translateScore").textContent = "0 / 0 Correct";
+    updateArenaHeader("Waiting for words");
+    return;
+  }
+  transList = shuffle([...words]);
+  transIndex = 0;
+  transScore = 0;
+  transTotal = 0;
+  transAnswered = false;
+  showTranslateQuestion();
+}
+
+function showTranslateQuestion() {
+  if (transIndex >= transList.length) {
+    $("#translateType").textContent = "DONE";
+    $("#translateQuestion").textContent = `🎉 Round Complete! ${transScore} / ${transTotal} Correct`;
+    $("#translateInput").style.display = "none";
+    $("#btnCheckTranslate").style.display = "none";
+    $("#btnTranslateHint").style.display = "none";
+    $("#btnTranslateListen").classList.add("hide");
+    $("#btnNextTranslate").style.display = "none";
+    $("#translateHintDisplay").classList.add("hidden");
+    $("#translateFeedback").textContent = "";
+    $("#translateExampleFeedback").textContent = "";
+    updateArenaHeader("Round finished");
+    return;
+  }
+
+  transAnswered = false;
+  transHintUsed = false;
+
+  $("#translateInput").style.display = "";
+  $("#btnCheckTranslate").style.display = "";
+  $("#btnTranslateHint").style.display = "";
+  $("#btnTranslateListen").classList.add("hide");
+  $("#btnNextTranslate").style.display = "none";
+  $("#translateHintDisplay").classList.add("hidden");
+  $("#translateFeedback").textContent = "";
+  $("#translateFeedback").className = "spelling-feedback";
+  $("#translateExampleFeedback").textContent = "";
+
+  const input = $("#translateInput");
+  input.value = "";
+  input.focus();
+
+  const current = transList[transIndex];
+  $("#translateType").textContent = (current.type || "Word").toUpperCase();
+  $("#translateQuestion").textContent = current.meaning;
+  $("#translateScore").textContent = `${transScore} / ${transTotal} Correct`;
+  updateArenaHeader(`Question ${transIndex + 1} of ${transList.length}`);
+}
+
+function checkTranslateAnswer() {
+  if (transAnswered || transIndex >= transList.length) return;
+  transAnswered = true;
+  transTotal++;
+
+  const current = transList[transIndex];
+  const userAns = $("#translateInput").value.trim().toLowerCase();
+  const isCorrect = userAns === current.word.trim().toLowerCase();
+
+  playSpeech(current.word);
+
+  if (isCorrect) {
+    transScore++;
+    $("#translateFeedback").textContent = `✅ Spot on! (${current.word})`;
+    $("#translateFeedback").className = "spelling-feedback correct";
+  } else {
+    $("#translateFeedback").textContent = `❌ Incorrect! Correct answer: ${current.word}`;
+    $("#translateFeedback").className = "spelling-feedback wrong";
+  }
+
+  if (current.example) {
+    $("#translateExampleFeedback").textContent = `"${current.example}"`;
+  }
+
+  handleQuizAttempt(current, isCorrect);
+  $("#btnTranslateListen").classList.remove("hide");
+  $("#translateScore").textContent = `${transScore} / ${transTotal} Correct`;
+  $("#btnNextTranslate").style.display = "inline-block";
+}
+
+function provideTranslateHint() {
+  if (transAnswered || transIndex >= transList.length) return;
+  const w = transList[transIndex].word.trim();
+  const hint = w.slice(0, Math.min(2, w.length)) + "_".repeat(Math.max(1, w.length - 2)) + ` (${w.length} letters)`;
+  const el = $("#translateHintDisplay");
+  el.textContent = `Hint: ${hint}`;
+  el.classList.remove("hidden");
+
+  if (!transHintUsed) {
+    transHintUsed = true;
+    $("#translateInput").value = w.charAt(0);
+    $("#translateInput").focus();
+  }
+}
+
+// ── 5C. Audio Spelling ──
+function startSpellingQuiz() {
+  const words = getActiveWords();
+  if (words.length === 0) {
+    $("#spellingHint").textContent = state.activeUnitId === "mistakes"
+      ? "🎉 No mistakes recorded! Great job!"
+      : "Add words to this deck first!";
+    $("#spellingInput").style.display = "none";
+    $("#btnCheckSpelling").style.display = "none";
+    $("#btnSpellListen").style.display = "none";
+    $("#btnNextSpelling").style.display = "none";
+    $("#spellingFeedback").textContent = "";
+    $("#spellingScore").textContent = "0 / 0 Correct";
+    updateArenaHeader("Waiting for words");
+    return;
+  }
+  spellList = shuffle([...words]);
+  spellIndex = 0;
+  spellScore = 0;
+  spellTotal = 0;
+  spellAnswered = false;
+  showSpellingQuestion();
+}
+
+function showSpellingQuestion() {
+  if (spellIndex >= spellList.length) {
+    $("#spellingHint").textContent = `🎉 Spelling Test Complete! ${spellScore} / ${spellTotal} Correct`;
+    $("#spellingInput").style.display = "none";
+    $("#btnCheckSpelling").style.display = "none";
+    $("#btnSpellListen").style.display = "none";
+    $("#btnNextSpelling").style.display = "none";
+    $("#spellingFeedback").textContent = "";
+    updateArenaHeader("Round finished");
+    return;
+  }
+
+  spellAnswered = false;
+  $("#spellingInput").style.display = "";
+  $("#btnCheckSpelling").style.display = "";
+  $("#btnSpellListen").style.display = "";
+  $("#btnNextSpelling").style.display = "none";
+  $("#spellingFeedback").textContent = "";
+  $("#spellingFeedback").className = "spelling-feedback";
+
+  const input = $("#spellingInput");
+  input.value = "";
+  input.focus();
+
+  const current = spellList[spellIndex];
+  $("#spellingHint").textContent = `Meaning: ${current.meaning}`;
+  $("#spellingScore").textContent = `${spellScore} / ${spellTotal} Correct`;
+  updateArenaHeader(`Question ${spellIndex + 1} of ${spellList.length}`);
+
+  playSpeech(current.word);
+}
+
+function checkSpellingAnswer() {
+  if (spellAnswered || spellIndex >= spellList.length) return;
+  spellAnswered = true;
+  spellTotal++;
+
+  const current = spellList[spellIndex];
+  const userAns = $("#spellingInput").value.trim().toLowerCase();
+  const isCorrect = userAns === current.word.trim().toLowerCase();
+
+  if (isCorrect) {
+    spellScore++;
+    $("#spellingFeedback").textContent = `✅ Perfect spelling! (${current.word})`;
+    $("#spellingFeedback").className = "spelling-feedback correct";
+  } else {
+    $("#spellingFeedback").textContent = `❌ Incorrect! Correct spelling: ${current.word}`;
+    $("#spellingFeedback").className = "spelling-feedback wrong";
+  }
+
+  handleQuizAttempt(current, isCorrect);
+  $("#spellingScore").textContent = `${spellScore} / ${spellTotal} Correct`;
+  $("#btnNextSpelling").style.display = "inline-block";
+}
+
+// ── 5D. Speed Match Game (6 Pairs = 12 Tiles) ──
+function startMatchGame() {
+  const words = getActiveWords();
+  const grid = $("#matchGridBox");
+  grid.innerHTML = "";
+  matchSelectedTile = null;
+  matchLocked = false;
+
+  if (words.length === 0) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--text-secondary);padding:36px;">${
+      state.activeUnitId === "mistakes" ? "🎉 No mistakes recorded! Great job!" : "Add words to play Speed Match!"
+    }</div>`;
+    updateArenaHeader("Waiting for words");
+    return;
+  }
+
+  const subset = shuffle([...words]).slice(0, 6);
+  matchRemainingPairs = subset.length;
+  updateArenaHeader(`${matchRemainingPairs} pairs left`);
+
+  const tiles = [];
+  subset.forEach((w) => {
+    tiles.push({ id: w.id, unitId: w._unitId, text: w.word, lang: "en", wordObj: w });
+    tiles.push({ id: w.id, unitId: w._unitId, text: w.meaning, lang: "ar", wordObj: w });
+  });
+
+  shuffle(tiles).forEach((t) => {
+    const btn = document.createElement("button");
+    btn.className = `match-tile ${t.lang === "ar" ? "ar-tile" : ""}`;
+    btn.textContent = t.text;
+    btn.addEventListener("click", () => handleMatchClick(btn, t));
+    grid.appendChild(btn);
+  });
+}
+
+function handleMatchClick(btn, tile) {
+  if (btn.disabled || matchLocked) return;
+  if (tile.lang === "en") playSpeech(tile.text);
+
+  if (!matchSelectedTile) {
+    matchSelectedTile = { btn, tile };
+    btn.classList.add("selected");
+    return;
+  }
+
+  if (matchSelectedTile.btn === btn) {
+    btn.classList.remove("selected");
+    matchSelectedTile = null;
+    return;
+  }
+
+  const first = matchSelectedTile;
+  matchSelectedTile = null;
+  first.btn.classList.remove("selected");
+
+  const isMatch = first.tile.id === tile.id && first.tile.lang !== tile.lang;
+
+  if (isMatch) {
+    btn.disabled = true;
+    first.btn.disabled = true;
+    btn.classList.add("matched");
+    first.btn.classList.add("matched");
+    handleQuizAttempt(tile.wordObj, true);
+    matchRemainingPairs--;
+    updateArenaHeader(`${matchRemainingPairs} pairs left`);
+
+    if (matchRemainingPairs === 0) {
+      toast("🎉 Board Cleared! +Bonus!", "success");
+      setTimeout(() => startMatchGame(), 950);
+    }
+  } else {
+    matchLocked = true;
+    btn.classList.add("wrong-flash");
+    first.btn.classList.add("wrong-flash");
+
+    const targetWordObj = tile.lang === "en" ? tile.wordObj : first.tile.wordObj;
+    handleQuizAttempt(targetWordObj, false);
+
+    setTimeout(() => {
+      btn.classList.remove("wrong-flash");
+      first.btn.classList.remove("wrong-flash");
+      matchLocked = false;
+    }, 550);
+  }
+}
+
+// ════════════════════════════════════════════════════
+//  6. WORD MANAGER (ADD, BULK, IMPORT/EXPORT, BENTO + TABLE EXPLORER)
+// ════════════════════════════════════════════════════
+
+function addSingleWord(wordText, type, meaning, example, exampleAr, targetUnitId) {
+  const unitId = targetUnitId || (state.activeUnitId === "all" || state.activeUnitId === "mistakes" ? getFirstAvailableUnitId() : state.activeUnitId);
+  const unit = state.units[unitId];
+  if (!unit) return toast("⚠️ Please create a unit / folder first (+ New Unit)!", "error");
+
+  const newWord = {
+    id: "w_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 6),
+    word: wordText.trim(),
+    type: type || "Noun",
+    meaning: meaning.trim(),
+    example: example ? example.trim() : "",
+    exampleAr: exampleAr ? exampleAr.trim() : "",
+    mastery: 0
+  };
+
+  unit.words.push(newWord);
+  saveState();
+  renderUnitsToolbar();
+  renderExplorer();
+  renderFlashcard();
+  toast(`✅ Added "${newWord.word}" to "${unit.name}"`, "success");
+}
+
+function deleteWord(wordId, unitId) {
+  const unit = state.units[unitId];
+  if (!unit) return;
+
+  delete state.mistakes[wordId];
+  unit.words = unit.words.filter((w) => w.id !== wordId);
+  saveState();
+  renderUnitsToolbar();
+  renderExplorer();
+  renderFlashcard();
+  toast("🗑️ Word deleted", "info");
+}
+
+function handleBulkAdd(text) {
+  if (!text || !text.trim()) return toast("Paste words using format: word = meaning", "error");
+
+  const targetUnitId = state.activeUnitId === "all" || state.activeUnitId === "mistakes" ? getFirstAvailableUnitId() : state.activeUnitId;
+  const unit = state.units[targetUnitId];
+  if (!unit) return toast("⚠️ Please create a unit / folder first (+ New Unit)!", "error");
+
+  let count = 0;
+  text.split("\n").forEach((line) => {
+    if (!line.includes("=")) return;
+    const parts = line.split("=");
+    const w = parts[0].trim();
+    const m = parts.slice(1).join("=").trim();
+    if (w && m) {
+      unit.words.push({
+        id: "w_" + Date.now().toString(36) + "_" + count + "_" + Math.random().toString(36).slice(2, 5),
+        word: w,
+        type: "Noun",
+        meaning: m,
+        example: "",
+        exampleAr: "",
+        mastery: 0
+      });
+      count++;
+    }
+  });
+
+  if (count > 0) {
+    $("#bulkInput").value = "";
+    saveState();
+    renderUnitsToolbar();
+    renderExplorer();
+    renderFlashcard();
+    toast(`📥 Added ${count} words to "${unit.name}"`, "success");
+  } else {
+    toast("No lines matched the format: word = meaning", "error");
+  }
+}
+
+function handleStrictJsonImport(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const text = e.target.result;
+      let parsed = null;
+      try { parsed = JSON.parse(text); } catch (e) {}
+
+      // 1. Full Database Backup Restore (e.g. VocabMaster_V3_Backup_*.json)
+      if (parsed && parsed.units && typeof parsed.units === "object" && Object.keys(parsed.units).length > 0) {
+        state.units = parsed.units;
+        if (parsed.mistakes && typeof parsed.mistakes === "object") {
+          state.mistakes = parsed.mistakes;
+        }
+        const keys = Object.keys(state.units);
+        state.activeUnitId = keys.length > 0 ? keys[0] : null;
+        saveState();
+        renderUnitsToolbar();
+        renderExplorer();
+        renderFlashcard();
+        const totalWords = getAllWordsWithUnit().length;
+        return toast(`✅ Full Backup Restored! Loaded ${keys.length} units & ${totalWords} words!`, "success");
+      }
+
+      // 2. Single Unit or List Import
+      let incoming = [];
+      if (Array.isArray(parsed)) {
+        incoming = parsed;
+      } else if (parsed && Array.isArray(parsed.words)) {
+        incoming = parsed.words;
+      } else {
+        // Fallback: Parse plain text lines (word = meaning or word - meaning)
+        text.split("\n").forEach((line) => {
+          let delimiter = line.includes("=") ? "=" : line.includes("-") ? "-" : line.includes(":") ? ":" : null;
+          if (delimiter) {
+            const parts = line.split(delimiter);
+            const w = parts[0].trim();
+            const m = parts.slice(1).join(delimiter).trim();
+            if (w && m) {
+              incoming.push({ word: w, meaning: m, type: "Noun" });
+            }
+          }
+        });
+      }
+
+      const valid = incoming
+        .filter((w) => w && (w.word || w.Word) && (w.meaning || w.Meaning))
+        .map((w, idx) => ({
+          id: "w_" + Date.now().toString(36) + "_" + idx + "_" + Math.random().toString(36).slice(2, 5),
+          word: (w.word || w.Word).trim(),
+          type: w.type || w.Type || "Noun",
+          meaning: (w.meaning || w.Meaning).trim(),
+          example: (w.example || w.Example || "").trim(),
+          exampleAr: (w.exampleAr || w.example_ar || w.ExampleAr || "").trim(),
+          mastery: typeof w.mastery === "number" ? w.mastery : 0
+        }));
+
+      if (valid.length === 0) throw new Error("No valid words found in file");
+
+      // Auto-target or auto-create unit
+      let targetUnit = state.units[state.activeUnitId];
+      if (!targetUnit || state.activeUnitId === "all" || state.activeUnitId === "mistakes") {
+        const firstId = getFirstAvailableUnitId();
+        targetUnit = state.units[firstId];
+      }
+      if (!targetUnit) {
+        const uName = (parsed && parsed.unitName) ? parsed.unitName : "Imported Unit";
+        const uKey = "unit_" + Date.now().toString(36);
+        state.units[uKey] = { id: uKey, name: uName, createdAt: Date.now(), words: [] };
+        state.activeUnitId = uKey;
+        targetUnit = state.units[uKey];
+      }
+
+      targetUnit.words.push(...valid);
+      saveState();
+      renderUnitsToolbar();
+      renderExplorer();
+      renderFlashcard();
+      toast(`📂 Successfully imported ${valid.length} words into "${targetUnit.name}"!`, "success");
+    } catch (err) {
+      toast("❌ Import error: " + err.message, "error");
+    }
+  };
+  reader.readAsText(file);
+}
+
+function exportActiveUnit() {
+  if (state.activeUnitId === "all") return exportAllData();
+  const words = getActiveWords();
+  const name = getActiveUnitName().replace(/[^a-zA-Z0-9_-]+/g, "_");
+  const payload = {
+    unitName: getActiveUnitName(),
+    exportedAt: new Date().toISOString(),
+    totalWords: words.length,
+    words: words.map(({ _unitName, _unitId, _isMistake, _mistakeStreak, ...clean }) => clean)
+  };
+  downloadJsonFile(payload, `VocabMaster_${name}.json`);
+  toast(`📤 Exported "${getActiveUnitName()}"`, "success");
+}
+
+function exportAllData() {
+  const payload = {
+    app: "VocabMaster_Ultra_V3",
+    version: "3.0",
+    exportedAt: new Date().toISOString(),
+    units: state.units,
+    mistakes: state.mistakes
+  };
+  downloadJsonFile(payload, `VocabMaster_V3_Backup_${new Date().toISOString().slice(0, 10)}.json`);
+  toast("💾 Exported full backup for all units!", "success");
+}
+
+function downloadJsonFile(obj, filename) {
+  const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function resetAllData() {
+  if (!confirm("⚠️ Warning: Delete all custom units and words and reset to default?")) return;
+  if (!confirm("Final Confirmation: All local data in V3 will be wiped.")) return;
+
+  localStorage.removeItem(STORAGE_KEY);
+  seedInitialState();
+  renderUnitsToolbar();
+  renderExplorer();
+  renderFlashcard();
+  toast("🔄 Reset all data to default", "info");
+}
+
+function getSmartFiller(word, type) {
+  const t = {
+    Noun: { en: `The ${word.toLowerCase()} played a crucial role in our progress.`, ar: `لعب/لعبت ${word.toLowerCase()} دوراً حاسماً في تقدمنا.` },
+    Verb: { en: `She was able to ${word.toLowerCase()} without hesitation.`, ar: `تمكنت من أن ${word.toLowerCase()} دون تردد.` },
+    Adjective: { en: `This strategy produced a truly ${word.toLowerCase()} outcome.`, ar: `أنتجت هذه الاستراتيجية نتيجة ${word.toLowerCase()} حقاً.` },
+    Adverb: { en: `The task was executed ${word.toLowerCase()} by the team.`, ar: `تم تنفيذ المهمة ${word.toLowerCase()} بواسطة الفريق.` },
+    Phrase: { en: `It is always wise to ${word.toLowerCase()} in daily life.`, ar: `من الحكمة دائماً ${word.toLowerCase()} في الحياة اليومية.` },
+    Other: { en: `Here is an example demonstrating "${word}".`, ar: `مثال يوضح استخدام "${word}".` }
+  };
+  return t[type] || t.Other;
+}
+
+// ────────────────────── DUAL WORD EXPLORER (BENTO CARDS + TABLE) ──────────────────────
+
+function setExplorerView(view) {
+  state.explorerView = view;
+  saveState();
+  $("#btnViewCards").classList.toggle("active", view === "cards");
+  $("#btnViewTable").classList.toggle("active", view === "table");
+  $("#wordCardsGrid").classList.toggle("hidden", view !== "cards");
+  $("#wordlistScrollBox").classList.toggle("hidden", view !== "table");
+  renderExplorer();
+}
+
+function getFilteredExplorerList() {
+  const scope = $("#listScopeFilter").value;
+  const masteryFilter = $("#filterMastery").value;
+  const search = $("#searchInput").value.trim().toLowerCase();
+
+  let list = [];
+  if (scope === "mistakes" || (scope === "active" && state.activeUnitId === "mistakes")) {
+    list = getAllWordsWithUnit().filter((w) => !!state.mistakes[w.id]);
+  } else if (scope === "all" || (scope === "active" && state.activeUnitId === "all")) {
+    list = getAllWordsWithUnit();
+  } else if (activeExplorerFolder && activeExplorerFolder !== "__all__") {
+    const targetId = activeExplorerFolder === "__main__" ? state.activeUnitId : activeExplorerFolder;
+    const targetUnit = state.units[targetId];
+    if (targetUnit && Array.isArray(targetUnit.words)) {
+      const parent = targetUnit.parentId && state.units[targetUnit.parentId] ? state.units[targetUnit.parentId] : null;
+      const displayName = parent ? `${parent.name} › ${targetUnit.name}` : targetUnit.name;
+      list = targetUnit.words.map((w) => ({
+        ...w,
+        _unitName: displayName,
+        _unitId: targetUnit.id,
+        _isMistake: !!state.mistakes[w.id]
+      }));
+    }
+  } else {
+    list = getActiveWords();
+  }
+
+  if (masteryFilter === "low") list = list.filter((w) => (w.mastery || 0) < 40);
+  else if (masteryFilter === "mid") list = list.filter((w) => (w.mastery || 0) >= 40 && (w.mastery || 0) < 80);
+  else if (masteryFilter === "high") list = list.filter((w) => (w.mastery || 0) >= 80);
+
+  if (search) {
+    list = list.filter((w) =>
+      w.word.toLowerCase().includes(search) ||
+      w.meaning.toLowerCase().includes(search) ||
+      (w.type || "").toLowerCase().includes(search)
+    );
+  }
+
+  return list;
+}
+
+function renderExplorerFolders(unit) {
+  const foldersGrid = $("#explorerFoldersGrid");
+  const breadcrumb = $("#explorerBreadcrumb");
+  const cardsGrid = $("#wordCardsGrid");
+  const tableBox = $("#wordlistScrollBox");
+  const emptyEl = $("#emptyMsg");
+
+  breadcrumb.classList.add("hidden");
+  cardsGrid.classList.add("hidden");
+  tableBox.classList.add("hidden");
+  emptyEl.style.display = "none";
+  foldersGrid.classList.remove("hidden");
+  foldersGrid.innerHTML = "";
+
+  const parts = getChildParts(unit.id);
+  const totalUnitWords = getUnitTotalWordCount(unit.id);
+  $("#listCount").textContent = totalUnitWords;
+
+  const calcAvgMastery = (words) => {
+    if (!words || words.length === 0) return 0;
+    return Math.round(words.reduce((sum, w) => sum + (w.mastery || 0), 0) / words.length);
+  };
+
+  // 1. Sub-folders (Parts inside the unit)
+  parts.forEach((part) => {
+    const avg = calcAvgMastery(part.words);
+    const card = document.createElement("button");
+    card.className = "explorer-folder-card";
+    card.innerHTML = `
+      <div class="folder-card-top">
+        <svg class="folder-card-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+        </svg>
+        <span class="folder-card-count">${part.words.length} words</span>
+      </div>
+      <div class="folder-card-title">${escapeHTML(part.name)}</div>
+      <div class="folder-card-meta">Avg Mastery: ${avg}% • Click to open words</div>
+    `;
+    card.addEventListener("click", () => {
+      activeExplorerFolder = part.id;
+      renderExplorer();
+    });
+    foldersGrid.appendChild(card);
+  });
+
+  // 2. Main/Direct words folder (if unit has direct words OR no parts yet)
+  if (unit.words.length > 0 || parts.length === 0) {
+    const avg = calcAvgMastery(unit.words);
+    const mainCard = document.createElement("button");
+    mainCard.className = "explorer-folder-card";
+    mainCard.innerHTML = `
+      <div class="folder-card-top">
+        <svg class="folder-card-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+        </svg>
+        <span class="folder-card-count">${unit.words.length} words</span>
+      </div>
+      <div class="folder-card-title">${parts.length > 0 ? "Main Words" : escapeHTML(unit.name)}</div>
+      <div class="folder-card-meta">Avg Mastery: ${avg}% • Click to open words</div>
+    `;
+    mainCard.addEventListener("click", () => {
+      activeExplorerFolder = "__main__";
+      renderExplorer();
+    });
+    foldersGrid.appendChild(mainCard);
+  }
+
+  // 3. Combined All Folder (when there are parts)
+  if (parts.length > 0) {
+    const allCard = document.createElement("button");
+    allCard.className = "explorer-folder-card all-folder";
+    allCard.innerHTML = `
+      <div class="folder-card-top">
+        <svg class="folder-card-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+          <polyline points="2 12 12 17 22 12"></polyline>
+          <polyline points="2 17 12 22 22 17"></polyline>
+        </svg>
+        <span class="folder-card-count">${totalUnitWords} words</span>
+      </div>
+      <div class="folder-card-title">All ${escapeHTML(unit.name)} Words</div>
+      <div class="folder-card-meta">Combined view of all folders in this unit</div>
+    `;
+    allCard.addEventListener("click", () => {
+      activeExplorerFolder = "__all__";
+      renderExplorer();
+    });
+    foldersGrid.appendChild(allCard);
+  }
+
+  // 4. + New Folder Card
+  const addCard = document.createElement("button");
+  addCard.className = "explorer-folder-card add-folder";
+  addCard.innerHTML = `
+    <svg class="folder-card-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"></line>
+      <line x1="5" y1="12" x2="19" y2="12"></line>
+    </svg>
+    <div class="folder-card-title" style="color:#6ee7b7;">+ New Folder</div>
+    <div class="folder-card-meta">Add a part/folder inside ${escapeHTML(unit.name)}</div>
+  `;
+  addCard.addEventListener("click", () => createNewPart(unit.id));
+  foldersGrid.appendChild(addCard);
+}
+
+function renderExplorer() {
+  const scope = $("#listScopeFilter").value;
+  const search = $("#searchInput").value.trim();
+  const activeUnit = state.units[state.activeUnitId];
+  const isMainUnit =
+    state.activeUnitId !== "all" &&
+    state.activeUnitId !== "mistakes" &&
+    activeUnit &&
+    (!activeUnit.parentId || !state.units[activeUnit.parentId]);
+
+  const foldersGrid = $("#explorerFoldersGrid");
+  const breadcrumb = $("#explorerBreadcrumb");
+
+  const hasChildParts = isMainUnit && getChildParts(activeUnit.id).length > 0;
+  if (isMainUnit && hasChildParts && scope === "active" && !search && activeExplorerFolder === null) {
+    renderExplorerFolders(activeUnit);
+    return;
+  }
+
+  if (foldersGrid) foldersGrid.classList.add("hidden");
+
+  const isChildPartActive = activeUnit && activeUnit.parentId && state.units[activeUnit.parentId];
+  if (isMainUnit && scope === "active" && activeExplorerFolder !== null && !search) {
+    breadcrumb.classList.remove("hidden");
+    let folderLabel = "Main Words";
+    if (activeExplorerFolder === "__all__") folderLabel = `All ${activeUnit.name} Words`;
+    else if (activeExplorerFolder !== "__main__" && state.units[activeExplorerFolder]) {
+      folderLabel = state.units[activeExplorerFolder].name;
+    }
+    breadcrumb.innerHTML = `
+      <button class="btn-back-folders" id="btnBackToFolders">← Back to ${escapeHTML(activeUnit.name)} Folders</button>
+      <span class="breadcrumb-folder-name">/ ${escapeHTML(folderLabel)}</span>
+    `;
+    const partsForMove = getChildParts(activeUnit.id);
+    if (activeExplorerFolder === "__main__" && activeUnit.words.length > 0 && partsForMove.length > 0) {
+      const moveBtn = document.createElement("button");
+      moveBtn.className = "btn-back-folders";
+      moveBtn.style.marginLeft = "auto";
+      moveBtn.textContent = `📦 Move ${activeUnit.words.length} words to ${partsForMove[0].name}`;
+      moveBtn.addEventListener("click", () => {
+        const targetPart = partsForMove[0];
+        const count = activeUnit.words.length;
+        targetPart.words.push(...activeUnit.words.splice(0, count));
+        activeExplorerFolder = targetPart.id;
+        saveState();
+        renderUnitsToolbar();
+        renderExplorer();
+        toast(`📦 Moved ${count} words into "${targetPart.name}"`, "success");
+      });
+      breadcrumb.appendChild(moveBtn);
+    }
+    $("#btnBackToFolders").addEventListener("click", () => {
+      activeExplorerFolder = null;
+      renderExplorer();
+    });
+  } else if (isChildPartActive && scope === "active" && !search) {
+    const parentUnit = state.units[activeUnit.parentId];
+    breadcrumb.classList.remove("hidden");
+    breadcrumb.innerHTML = `
+      <button class="btn-back-folders" id="btnBackToFolders">← Back to ${escapeHTML(parentUnit.name)}</button>
+      <span class="breadcrumb-folder-name">/ ${escapeHTML(activeUnit.name)}</span>
+    `;
+    $("#btnBackToFolders").addEventListener("click", () => {
+      selectUnit(parentUnit.id);
+    });
+  } else if (breadcrumb) {
+    breadcrumb.classList.add("hidden");
+  }
+
+  $("#wordCardsGrid").classList.toggle("hidden", state.explorerView !== "cards");
+  $("#wordlistScrollBox").classList.toggle("hidden", state.explorerView !== "table");
+
+  const list = getFilteredExplorerList();
+  $("#listCount").textContent = list.length;
+
+  const emptyEl = $("#emptyMsg");
+  if (list.length === 0) {
+    emptyEl.style.display = "block";
+    emptyEl.textContent = state.activeUnitId === "mistakes" || $("#listScopeFilter").value === "mistakes"
+      ? "🎉 No mistakes recorded! Great job!"
+      : "No words match your current filter.";
+    $("#wordCardsGrid").innerHTML = "";
+    $("#wordlistBody").innerHTML = "";
+    return;
+  }
+  emptyEl.style.display = "none";
+
+  if (state.explorerView === "cards") {
+    renderBentoGrid(list);
+  } else {
+    renderWordTable(list);
+  }
+}
+
+function renderBentoGrid(list) {
+  const grid = $("#wordCardsGrid");
+  grid.innerHTML = "";
+
+  list.forEach((w) => {
+    const m = w.mastery || 0;
+    const tier = m >= 80 ? "high" : m >= 40 ? "mid" : "low";
+    const isMistake = !!state.mistakes[w.id];
+
+    const card = document.createElement("div");
+    card.className = `bento-word-card ${isMistake ? "mistake-card" : ""}`;
+    card.innerHTML = `
+      <div>
+        <div class="bento-card-top">
+          <div class="bento-word-title-group">
+            <button class="btn-speak" title="Pronounce">🔊</button>
+            <div>
+              <div class="bento-word-name">${escapeHTML(w.word)}</div>
+              <div class="bento-word-meta">${escapeHTML(w.type || "Word")} • ${escapeHTML(w._unitName)}</div>
+            </div>
+          </div>
+          <span class="bento-mastery-badge ${tier}">${m}%</span>
+        </div>
+
+        <div class="bento-meaning-box">${escapeHTML(w.meaning)}</div>
+        <p class="bento-example">"${escapeHTML(w.example || "No example provided.")}"</p>
+      </div>
+
+      <div class="bento-card-footer">
+        <div class="bento-progress-track">
+          <div class="bento-progress-fill ${tier}" style="width:${m}%"></div>
+        </div>
+        <div class="bento-footer-actions">
+          <button class="btn-mistake-toggle ${isMistake ? "in-mistakes" : ""}">
+            ${isMistake ? "⚠️ In Mistakes" : "⚑ Mark Hard"}
+          </button>
+          <button class="btn-delete-word" title="Delete Word">🗑️</button>
+        </div>
+      </div>
+    `;
+
+    card.querySelector(".btn-speak").addEventListener("click", () => playSpeech(w.word));
+    card.querySelector(".btn-mistake-toggle").addEventListener("click", () => toggleManualMistake(w.id));
+    card.querySelector(".btn-delete-word").addEventListener("click", () => deleteWord(w.id, w._unitId));
+    grid.appendChild(card);
+  });
+}
+
+function renderWordTable(list) {
+  const tbody = $("#wordlistBody");
+  tbody.innerHTML = "";
+
+  list.forEach((w, idx) => {
+    const m = w.mastery || 0;
+    const mc = m < 40 ? "mastery-low" : m < 75 ? "mastery-mid" : "mastery-high";
+    const isMistake = !!state.mistakes[w.id];
+
+    const tr = document.createElement("tr");
+    if (isMistake) tr.className = "mistake-row";
+    tr.innerHTML = `
+      <td class="num-cell">${idx + 1}</td>
+      <td class="word-cell">
+        ${escapeHTML(w.word)}
+        ${isMistake ? '<span class="needs-practice-badge">⚠️ Needs Practice</span>' : ""}
+      </td>
+      <td class="type-cell">${escapeHTML(w.type || "Noun")}</td>
+      <td dir="rtl" style="text-align:right;">${escapeHTML(w.meaning)}</td>
+      <td class="unit-cell">${escapeHTML(w._unitName || "—")}</td>
+      <td class="${mc}">
+        <span class="mastery-bar"><span class="mastery-bar-fill" style="width:${m}%"></span></span>
+        <span class="mastery-pct">${m}%</span>
+      </td>
+      <td>
+        <button class="btn-delete-word" title="Delete Word">✕</button>
+      </td>
+    `;
+    tr.querySelector(".btn-delete-word").addEventListener("click", () => deleteWord(w.id, w._unitId));
+    tbody.appendChild(tr);
+  });
+}
+
+// ════════════════════════════════════════════════════
+//  7. MODE NAVIGATION & EVENT BINDINGS
+// ════════════════════════════════════════════════════
+
+function switchAppMode(mode) {
+  stopPocketLoop();
+  currentMode = mode;
+  $$(".nav-btn").forEach((b) => b.classList.toggle("active", b.dataset.mode === mode));
+  $$(".mode-panel").forEach((p) => p.classList.remove("active"));
+
+  if (mode === "flashcards") {
+    $("#flashcardsPanel").classList.add("active");
+    renderFlashcard();
+  } else if (mode === "quiz") {
+    $("#quizPanel").classList.add("active");
+    startActiveQuiz();
+  } else if (mode === "context") {
+    $("#contextPanel").classList.add("active");
+    if (contextTargetWords.length === 0) rollContextTargetWords();
+    else renderContextBuilder();
+  } else if (mode === "manage") {
+    $("#managePanel").classList.add("active");
+    populateAddWordUnitSelect();
+    setExplorerView(state.explorerView);
+  }
+}
+
+function bindAllEvents() {
+  // Sidebar navigation
+  $$(".nav-btn").forEach((btn) =>
+    btn.addEventListener("click", () => {
+      switchAppMode(btn.dataset.mode);
+      closeMobileSidebar();
+    })
+  );
+
+  // Sidebar special decks & controls
+  const sideMistakes = $("#side-mistakes");
+  const sideAll = $("#side-all");
+  if (sideMistakes) {
+    sideMistakes.addEventListener("click", () => {
+      selectUnit("mistakes");
+      closeMobileSidebar();
+    });
+  }
+  if (sideAll) {
+    sideAll.addEventListener("click", () => {
+      selectUnit("all");
+      closeMobileSidebar();
+    });
+  }
+
+  const btnToggleSidebar = $("#btnToggleSidebar");
+  if (btnToggleSidebar) {
+    if (localStorage.getItem("vm_sidebar_collapsed") === "1") {
+      $("#appSidebar").classList.add("collapsed");
+    }
+    btnToggleSidebar.addEventListener("click", () => {
+      const isCollapsed = $("#appSidebar").classList.toggle("collapsed");
+      localStorage.setItem("vm_sidebar_collapsed", isCollapsed ? "1" : "0");
+    });
+  }
+
+  const btnMobileSidebar = $("#btnMobileSidebar");
+  const sidebarBackdrop = $("#sidebarBackdrop");
+  if (btnMobileSidebar) {
+    btnMobileSidebar.addEventListener("click", () => {
+      $("#appSidebar").classList.toggle("mobile-open");
+      if (sidebarBackdrop) sidebarBackdrop.classList.toggle("open");
+    });
+  }
+  if (sidebarBackdrop) {
+    sidebarBackdrop.addEventListener("click", closeMobileSidebar);
+  }
+
+  // Units toolbar
+  $("#btnQuickAddUnit").addEventListener("click", () => {
+    createNewUnit();
+    closeMobileSidebar();
+  });
+  const btnAddPartToUnit = $("#btnAddPartToUnit");
+  if (btnAddPartToUnit) {
+    btnAddPartToUnit.addEventListener("click", () => createNewPart(state.activeUnitId));
+  }
+  $("#btnRenameActiveUnit").addEventListener("click", renameActiveUnit);
+  $("#btnClearActiveUnitWords").addEventListener("click", clearActiveUnitWords);
+  $("#btnDeleteActiveUnit").addEventListener("click", deleteActiveUnit);
+  $("#btnClearAllMistakes").addEventListener("click", clearAllMistakes);
+
+  // Flashcards studio
+  $("#cardScene").addEventListener("click", flipFlashcard);
+  $("#btnSpeak").addEventListener("click", (e) => {
+    e.stopPropagation();
+    const w = getActiveWords();
+    if (w[flashcardIndex]) playSpeech(w[flashcardIndex].word);
+  });
+  $("#btnSpeakSlow").addEventListener("click", (e) => {
+    e.stopPropagation();
+    const w = getActiveWords();
+    if (w[flashcardIndex]) playSpeech(w[flashcardIndex].word, 0.58);
+  });
+  $("#btnSpeakExample").addEventListener("click", (e) => {
+    e.stopPropagation();
+    const w = getActiveWords();
+    if (w[flashcardIndex] && w[flashcardIndex].example) playSpeech(w[flashcardIndex].example, 0.88);
+  });
+  $("#btnSpeakBack").addEventListener("click", (e) => {
+    e.stopPropagation();
+    const w = getActiveWords();
+    if (w[flashcardIndex]) playSpeech(w[flashcardIndex].word);
+  });
+  $("#btnAutoAudio").addEventListener("click", toggleAutoPlayAudio);
+  $("#btnPocketLoop").addEventListener("click", togglePocketLoop);
+
+  // Context Builder events
+  const btnRollCtx = $("#btnRollContextWords");
+  if (btnRollCtx) btnRollCtx.addEventListener("click", rollContextTargetWords);
+  const inpCtx = $("#contextSentenceInput");
+  if (inpCtx) inpCtx.addEventListener("input", renderContextBuilder);
+  const btnSaveCtx = $("#btnSaveContextSentence");
+  if (btnSaveCtx) btnSaveCtx.addEventListener("click", saveContextBuilderSentence);
+
+  // Custom Unit Modal events
+  const btnConfirmUnit = $("#btnConfirmUnitModal");
+  const btnCancelUnit = $("#btnCancelUnitModal");
+  const btnCloseUnit = $("#btnCloseUnitModal");
+  const inpUnitModal = $("#unitModalInput");
+  if (btnConfirmUnit) {
+    btnConfirmUnit.addEventListener("click", () => {
+      const val = inpUnitModal ? inpUnitModal.value.trim() : "";
+      if (!val) return toast("⚠️ Please enter a name", "warning");
+      const cb = unitModalCallback;
+      closeUnitDialog();
+      if (cb) cb(val);
+    });
+  }
+  if (btnCancelUnit) btnCancelUnit.addEventListener("click", closeUnitDialog);
+  if (btnCloseUnit) btnCloseUnit.addEventListener("click", closeUnitDialog);
+  if (inpUnitModal) {
+    inpUnitModal.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        btnConfirmUnit.click();
+      } else if (e.key === "Escape") {
+        closeUnitDialog();
+      }
+    });
+  }
+  $("#btnShuffleCards").addEventListener("click", shuffleFlashcards);
+  $("#btnPrev").addEventListener("click", () => navigateCard(-1));
+  $("#btnNext").addEventListener("click", () => navigateCard(1));
+  $$(".rate-btn").forEach((btn) => btn.addEventListener("click", () => rateFlashcard(btn.dataset.rating)));
+
+  // Quiz mode switcher
+  $$(".quiz-type-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      $$(".quiz-type-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      activeQuizType = btn.dataset.quiz;
+
+      $("#mcqArea").classList.add("hidden");
+      $("#translateArea").classList.add("hidden");
+      $("#spellingArea").classList.add("hidden");
+      $("#matchArea").classList.add("hidden");
+
+      $(`#${activeQuizType}Area`).classList.remove("hidden");
+      startActiveQuiz();
+    });
+  });
+
+  // MCQ
+  $("#btnNextMcq").addEventListener("click", () => { mcqIndex++; showMcqQuestion(); });
+  $("#btnResetMcq").addEventListener("click", startMcqQuiz);
+
+  // Translate
+  $("#btnCheckTranslate").addEventListener("click", checkTranslateAnswer);
+  $("#btnTranslateHint").addEventListener("click", provideTranslateHint);
+  $("#btnTranslateListen").addEventListener("click", () => {
+    if (transList[transIndex]) playSpeech(transList[transIndex].word);
+  });
+  $("#translateInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (!transAnswered) checkTranslateAnswer();
+      else { transIndex++; showTranslateQuestion(); }
+    }
+  });
+  $("#btnNextTranslate").addEventListener("click", () => { transIndex++; showTranslateQuestion(); });
+  $("#btnResetTranslate").addEventListener("click", startTranslateQuiz);
+
+  // Spelling
+  $("#btnSpellListen").addEventListener("click", () => {
+    if (spellList[spellIndex]) playSpeech(spellList[spellIndex].word);
+  });
+  $("#btnCheckSpelling").addEventListener("click", checkSpellingAnswer);
+  $("#spellingInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (!spellAnswered) checkSpellingAnswer();
+      else { spellIndex++; showSpellingQuestion(); }
+    }
+  });
+  $("#btnNextSpelling").addEventListener("click", () => { spellIndex++; showSpellingQuestion(); });
+  $("#btnResetSpelling").addEventListener("click", startSpellingQuiz);
+
+  // Match
+  $("#btnNewMatchBoard").addEventListener("click", startMatchGame);
+
+  // Word Manager
+  $$(".pos-pill").forEach((pill) => {
+    pill.addEventListener("click", () => {
+      $$(".pos-pill").forEach((p) => p.classList.remove("active"));
+      pill.classList.add("active");
+      const inputTypeEl = $("#inputType");
+      if (inputTypeEl) inputTypeEl.value = pill.dataset.pos;
+    });
+  });
+
+  const btnGear = $("#btnDataSettingsGear");
+  const popover = $("#dataSettingsPopover");
+  if (btnGear && popover) {
+    const closeSettingsPopover = () => {
+      btnGear.classList.remove("active");
+      btnGear.setAttribute("aria-expanded", "false");
+      popover.classList.remove("open");
+    };
+
+    btnGear.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const isOpen = popover.classList.toggle("open");
+      btnGear.classList.toggle("active", isOpen);
+      btnGear.setAttribute("aria-expanded", String(isOpen));
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!popover.contains(e.target) && e.target !== btnGear && !btnGear.contains(e.target)) {
+        closeSettingsPopover();
+      }
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeSettingsPopover();
+    });
+
+    const fileInp = $("#fileImportCurrentUnit");
+    if (fileInp) fileInp.addEventListener("change", () => closeSettingsPopover());
+    const expUnitBtn = $("#btnExportActiveUnit");
+    if (expUnitBtn) expUnitBtn.addEventListener("click", () => closeSettingsPopover());
+    const expAllBtn = $("#btnExportAllData");
+    if (expAllBtn) expAllBtn.addEventListener("click", () => closeSettingsPopover());
+    const resetBtn = $("#btnResetAllApp");
+    if (resetBtn) resetBtn.addEventListener("click", () => closeSettingsPopover());
+  }
+
+  $("#addWordForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const w = $("#inputWord").value;
+    const t = $("#inputType").value;
+    const m = $("#inputMeaning").value;
+    const ex = $("#inputExample").value;
+    const ea = $("#inputExampleAr").value;
+    const uid = $("#inputUnitSelect").value;
+    if (!w || !m) return toast("Word and Meaning are required!", "error");
+    addSingleWord(w, t, m, ex, ea, uid);
+    e.target.reset();
+    const inputTypeEl = $("#inputType");
+    if (inputTypeEl) inputTypeEl.value = "Noun";
+    $$(".pos-pill").forEach((p) => p.classList.toggle("active", p.dataset.pos === "Noun"));
+    populateAddWordUnitSelect();
+  });
+
+  $("#btnAutoFill").addEventListener("click", () => {
+    const w = $("#inputWord").value.trim();
+    const t = $("#inputType").value;
+    if (!w) return toast("Enter an English word first!", "error");
+    const f = getSmartFiller(w, t);
+    if (!$("#inputExample").value) $("#inputExample").value = f.en;
+    if (!$("#inputExampleAr").value) $("#inputExampleAr").value = f.ar;
+    toast("✨ Example generated", "info");
+  });
+
+  $("#btnBulkAdd").addEventListener("click", () => handleBulkAdd($("#bulkInput").value));
+  $("#fileImportCurrentUnit").addEventListener("change", (e) => {
+    if (e.target.files[0]) handleStrictJsonImport(e.target.files[0]);
+    e.target.value = "";
+  });
+  $("#btnExportActiveUnit").addEventListener("click", exportActiveUnit);
+  $("#btnExportAllData").addEventListener("click", exportAllData);
+  $("#btnResetAllApp").addEventListener("click", resetAllData);
+
+  // Explorer filters & view toggle
+  $("#searchInput").addEventListener("input", renderExplorer);
+  $("#filterMastery").addEventListener("change", renderExplorer);
+  $("#listScopeFilter").addEventListener("change", renderExplorer);
+  $("#btnViewCards").addEventListener("click", () => setExplorerView("cards"));
+  $("#btnViewTable").addEventListener("click", () => setExplorerView("table"));
+
+  // Keyboard shortcuts
+  document.addEventListener("keydown", (e) => {
+    if (["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName)) return;
+    if (currentMode !== "flashcards") return;
+
+    if (e.code === "Space") { e.preventDefault(); flipFlashcard(); }
+    else if (e.key === "ArrowRight") { e.preventDefault(); navigateCard(1); }
+    else if (e.key === "ArrowLeft") { e.preventDefault(); navigateCard(-1); }
+    else if (e.key === "1") rateFlashcard("hard");
+    else if (e.key === "2") rateFlashcard("good");
+    else if (e.key === "3") rateFlashcard("easy");
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+//  8. UTILITIES, AUTO-UPDATER & BOOTSTRAP
+// ══════════════════════════════════════════════════════════════
+
+const UPDATER_PORT = 49555;
+const UPDATER_BASE = `http://127.0.0.1:${UPDATER_PORT}/api`;
+let appCurrentVersion = "1.0.2";
+
+function startUpdaterHeartbeat() {
+  // Ping local C# launcher every 20 seconds to keep it informed the app is open
+  setInterval(() => {
+    fetch(`${UPDATER_BASE}/heartbeat`, { method: "POST" }).catch(() => {});
+  }, 20000);
+
+  // Send clean shutdown signal on window close / unload
+  window.addEventListener("beforeunload", () => {
+    try {
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon(`${UPDATER_BASE}/shutdown`);
+      }
+    } catch (e) {}
+  });
+}
+
+async function fetchCurrentVersion() {
+  try {
+    const res = await fetch(`${UPDATER_BASE}/version`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.version) {
+        appCurrentVersion = data.version;
+        const pill = $("#sidebarVersionPill");
+        if (pill) pill.textContent = `v${appCurrentVersion}`;
+        const desc = $("#popoverVersionDesc");
+        if (desc) desc.textContent = `Current version: v${appCurrentVersion}`;
+      }
+    }
+  } catch (e) {}
+}
+
+async function checkForUpdates(isManual = false) {
+  if (isManual) {
+    toast("🔍 جاري التحقق من وجود تحديثات جديدة...", "info");
+  }
+
+  try {
+    const res = await fetch(`${UPDATER_BASE}/check-update`);
+    if (!res.ok) throw new Error("Connection failed");
+    const data = await res.json();
+
+    if (data.offline) {
+      if (isManual) {
+        toast("⚠️ لا يوجد اتصال بالإنترنت للتحقق من التحديثات.", "error");
+      }
+      return;
+    }
+
+    if (data.hasUpdate) {
+      showUpdateModal(data);
+    } else {
+      if (isManual) {
+        toast(`✨ أنت تستخدم أحدث إصدار بالفعل (v${data.currentVersion || appCurrentVersion})`, "success");
+      }
+    }
+  } catch (err) {
+    if (isManual) {
+      toast("⚠️ تعذر الاتصال بمركز التحديثات.", "error");
+    }
+  }
+}
+
+function showUpdateModal(data) {
+  const modal = $("#updateModalBackdrop");
+  if (!modal) return;
+
+  const lblCur = $("#lblCurrentVersion");
+  const lblLat = $("#lblLatestVersion");
+  const lblNotes = $("#lblUpdateNotes");
+  const progressBox = $("#updateProgressBox");
+  const footer = $("#updateDialogFooter");
+  const btnClose = $("#btnCloseUpdateModal");
+
+  if (lblCur) lblCur.textContent = `v${data.currentVersion || appCurrentVersion}`;
+  if (lblLat) lblLat.textContent = `v${data.latestVersion || "New"}`;
+  if (lblNotes) lblNotes.textContent = data.notes || "تحسينات عامة وإصلاحات وتحديثات جديدة.";
+
+  if (progressBox) progressBox.classList.add("hidden");
+  if (footer) footer.classList.remove("hidden");
+  if (btnClose) btnClose.style.display = "";
+
+  modal.classList.remove("hidden");
+}
+
+function hideUpdateModal() {
+  const modal = $("#updateModalBackdrop");
+  if (modal) modal.classList.add("hidden");
+}
+
+async function applyUpdateNow() {
+  const progressBox = $("#updateProgressBox");
+  const footer = $("#updateDialogFooter");
+  const statusLbl = $("#lblUpdateProgressStatus");
+  const btnClose = $("#btnCloseUpdateModal");
+
+  if (progressBox) progressBox.classList.remove("hidden");
+  if (footer) footer.classList.add("hidden");
+  if (btnClose) btnClose.style.display = "none";
+
+  try {
+    const res = await fetch(`${UPDATER_BASE}/apply-update`, { method: "POST" });
+    const data = await res.json();
+
+    if (data.success) {
+      if (statusLbl) statusLbl.textContent = "✅ تم تثبيت التحديث بنجاح! جاري إعادة التحميل...";
+      toast("🚀 تم تثبيت التحديث بنجاح! جاري التحديث...", "success");
+      setTimeout(() => {
+        window.location.reload();
+      }, 1200);
+    } else {
+      throw new Error(data.error || "فشل تنزيل ملفات التحديث");
+    }
+  } catch (err) {
+    if (statusLbl) statusLbl.textContent = `❌ فشل التحديث: ${err.message}`;
+    toast(`❌ فشل التحديث: ${err.message}`, "error");
+    setTimeout(() => {
+      if (progressBox) progressBox.classList.add("hidden");
+      if (footer) footer.classList.remove("hidden");
+      if (btnClose) btnClose.style.display = "";
+    }, 3000);
+  }
+}
+
+function initUpdaterEvents() {
+  const btnSide = $("#btnSidebarCheckUpdate");
+  if (btnSide) btnSide.addEventListener("click", () => checkForUpdates(true));
+
+  const btnPop = $("#btnCheckUpdatePopover");
+  if (btnPop) {
+    btnPop.addEventListener("click", () => {
+      const popover = $("#dataSettingsPopover");
+      const btnGear = $("#btnDataSettingsGear");
+      if (popover) popover.classList.remove("open");
+      if (btnGear) {
+        btnGear.classList.remove("active");
+        btnGear.setAttribute("aria-expanded", "false");
+      }
+      checkForUpdates(true);
+    });
+  }
+
+  const btnConfirm = $("#btnConfirmApplyUpdate");
+  if (btnConfirm) btnConfirm.addEventListener("click", applyUpdateNow);
+
+  const btnDismiss = $("#btnDismissUpdate");
+  if (btnDismiss) btnDismiss.addEventListener("click", hideUpdateModal);
+
+  const btnClose = $("#btnCloseUpdateModal");
+  if (btnClose) btnClose.addEventListener("click", hideUpdateModal);
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function escapeHTML(str) {
+  if (!str) return "";
+  const d = document.createElement("div");
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function toast(msg, type = "info") {
+  const c = $("#toastContainer");
+  if (!c) return;
+  const el = document.createElement("div");
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  c.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  loadState();
+  bindAllEvents();
+  initUpdaterEvents();
+  startUpdaterHeartbeat();
+  fetchCurrentVersion();
+  renderUnitsToolbar();
+  switchAppMode("flashcards");
+
+  // Silent update check in background after 3 seconds
+  setTimeout(() => {
+    checkForUpdates(false);
+  }, 3000);
+});

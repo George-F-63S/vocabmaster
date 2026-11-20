@@ -1,0 +1,22 @@
+{
+  "name": "VocabMaster Ultra",
+  "short_name": "VocabMaster",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#070c18",
+  "theme_color": "#00d4ff",
+  "description": "The Ultimate English Vocabulary Trainer",
+  "icons": [
+    {
+      "src": "assets/icons/favicon.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/icons/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
