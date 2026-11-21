@@ -1,19 +1,19 @@
 ﻿{
-  "version": "1.2.3",
-  "build": 16,
-  "date": "2026-11-21",
-  "notes": "🚀 إصدار متكامل ومحمول بالكامل (v1.2.3) — دمج مباشر لمكتبات WebView2 وميزة التهيئة الذاتية والتثبيت التلقائي لمشغل مايكروسوفت على أي كمبيوتر جديد!",
-  "files": [
-    "css/style.css",
-    "index.html",
-    "js/app.js",
-    "assets/icons/logo.png",
-    "assets/icons/avatar-crest.png",
-    "assets/icons/favicon.png",
-    "assets/icons/favicon-16.png",
-    "assets/icons/favicon-32.png",
-    "assets/icons/app.ico",
-    "manifest.json",
-    "version.json"
-  ]
+    "date":  "2026-11-21",
+    "files":  [
+                  "css/style.css",
+                  "index.html",
+                  "js/app.js",
+                  "assets/icons/logo.png",
+                  "assets/icons/avatar-crest.png",
+                  "assets/icons/favicon.png",
+                  "assets/icons/favicon-16.png",
+                  "assets/icons/favicon-32.png",
+                  "assets/icons/app.ico",
+                  "manifest.json",
+                  "version.json"
+              ],
+    "build":  17,
+    "version":  "1.2.4",
+    "notes":  "🚀 تحديث شامل (v1.2.4): نظام تحديث ذاتي مستقل ومنفصل (Detached Self-Replacing Updater) يقوم باستبدال مشغل VocabMaster.exe وتنظيف كاش WebView2 وإعادة تشغيل التطبيق تلقائياً بالنسخة الجديدة مع أمان تام للبيانات!"
 }
