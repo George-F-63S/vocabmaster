@@ -696,9 +696,27 @@
 
           <!-- Clean Bulk Paste Body -->
           <div class="bulk-section">
-            <div class="field-label" style="display: flex; align-items: center; justify-content: space-between;">
+            <!-- 2-Step Target Deck Selector for Bulk Add -->
+            <div class="deck-selector-row" style="margin-bottom: 12px;">
+              <div class="selector-col">
+                <label class="selector-lbl">1. Target Unit</label>
+                <div class="custom-select-wrap">
+                  <select id="selBulkUnit" class="control-select deck-select"></select>
+                  <div class="select-glow-border"></div>
+                </div>
+              </div>
+              <div class="selector-col">
+                <label class="selector-lbl">2. Target Part</label>
+                <div class="custom-select-wrap">
+                  <select id="selBulkPart" class="control-select deck-select"></select>
+                  <div class="select-glow-border"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="field-label" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
               <span>Format: word = meaning</span>
-              <span class="target-badge">Target: <span id="bulkTargetUnitName">—</span></span>
+              <span class="target-badge">Selected: <span id="bulkTargetUnitName">—</span></span>
             </div>
 
             <textarea
