@@ -79,6 +79,16 @@
           </span>
           <span class="nav-label">Word Manager</span>
         </button>
+        <button class="nav-btn sidebar-item" id="btnSidebarHowToUse" title="How to Use Me / شرح التطبيق" data-tooltip="How to Use">
+          <span class="nav-icon guide-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+          </span>
+          <span class="nav-label">How to Use Me</span>
+        </button>
       </nav>
 
       <div class="sidebar-divider"></div>
@@ -114,14 +124,14 @@
       <div class="sidebar-units-list" id="unitsTabList">
         <!-- Dynamically injected unit folders -->
       </div>
-      <button class="sidebar-item sidebar-new-unit" id="btnQuickAddUnit" title="Create a new isolated unit" data-tooltip="+ New Unit">
+      <button class="sidebar-item sidebar-new-unit" id="btnQuickAddUnit" title="Create a new isolated unit" data-tooltip="New Unit">
         <span class="nav-icon new-unit-icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
         </span>
-        <span class="nav-label">+ New Unit</span>
+        <span class="nav-label">New Unit</span>
       </button>
     </div>
 
@@ -160,7 +170,7 @@
         <div class="units-actions-side" id="unitsActionsNormal">
           <button class="btn-tool" id="btnAddPartToUnit" title="Add a sub-part inside this unit">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            <span>+ Part</span>
+            <span>Add Part</span>
           </button>
           <button class="btn-tool warn" id="btnRenameActiveUnit" title="Rename current active unit or part">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
@@ -201,6 +211,14 @@
           <span class="stat-label">Mastery</span>
           <span class="stat-value" id="statMastery">0%</span>
         </div>
+        <button class="btn-guide-header" id="btnHeaderHowToUse" title="How to Use Me / شرح التطبيق">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+          <span>How to Use Me</span>
+        </button>
       </div>
     </header>
 
@@ -633,6 +651,22 @@
 
                 <div class="popover-divider"></div>
 
+                <button type="button" class="popover-row" id="btnHowToUsePopover" role="menuitem">
+                  <div class="row-icon-box purple">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                      <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                  </div>
+                  <div class="row-meta">
+                    <span class="row-title">How to Use Me</span>
+                    <span class="row-desc">All features &amp; tools guide</span>
+                  </div>
+                </button>
+
+                <div class="popover-divider"></div>
+
                 <button type="button" class="popover-row" id="btnCheckUpdatePopover" role="menuitem">
                   <div class="row-icon-box cyan">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -775,6 +809,242 @@
     </div>
   </div>
 
+  <!-- ══════════════════ HOW TO USE ME MODAL ══════════════════ -->
+  <div class="modal-backdrop hidden" id="guideModalBackdrop">
+    <div class="modal-dialog guide-dialog" role="dialog" aria-modal="true" aria-labelledby="guideModalTitle">
+      <div class="modal-dialog-header">
+        <div class="dialog-title-group">
+          <div class="dialog-icon-bubble guide-bubble">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+          </div>
+          <div>
+            <h3 id="guideModalTitle" class="dialog-title">How to Use Me 💡 | دليل استخدام التطبيق</h3>
+            <p class="dialog-sub">دليلك الشامل لجميع الميزات والأزرار ووظيفتها في VocabMaster Ultra</p>
+          </div>
+        </div>
+        <button type="button" class="dialog-close-btn" id="btnCloseGuideModal" aria-label="Close">&times;</button>
+      </div>
+
+      <div class="dialog-body guide-dialog-body">
+        <div class="guide-grid">
+          <!-- Item 1: Flashcards -->
+          <div class="guide-card">
+            <div class="guide-card-header">
+              <div class="guide-icon-box cyan">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                </svg>
+              </div>
+              <div class="guide-card-title-wrap">
+                <h4>Flashcards</h4>
+                <span class="guide-ar-title">كروت الحفظ الذكية</span>
+              </div>
+              <span class="guide-tag">Study</span>
+            </div>
+            <p class="guide-card-desc">
+              قلب الكارت بالضغط عليه أو بمسافة (<kbd>Space</kbd>) لمشاهدة المعنى العربي والأمثلة. نظام التقييم الثلاثي (<span style="color:#f87171">Hard</span> / <span style="color:#38bdf8">Good</span> / <span style="color:#34d399">Easy</span>) يرفع نسبة إتقانك للكلمة ويبرمج موعد مراجعتها تلقائياً.
+            </p>
+          </div>
+
+          <!-- Item 2: Auto-Voice & Slow Voice -->
+          <div class="guide-card">
+            <div class="guide-card-header">
+              <div class="guide-icon-box blue">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                </svg>
+              </div>
+              <div class="guide-card-title-wrap">
+                <h4>Auto-Voice &amp; Slow Voice (0.6x)</h4>
+                <span class="guide-ar-title">النطق الصوتي السريع والبطيء</span>
+              </div>
+              <span class="guide-tag">Audio</span>
+            </div>
+            <p class="guide-card-desc">
+              ينطق الكلمة الإنجليزية تلقائياً فور ظهورها بلكنة أمريكية واضحة. وزر النطق البطيء <b>0.6x</b> (أيقونة السلحفاة) يبطئ الصوت لمساعدتك على التقاط مخارج الحروف في الكلمات الصعبة.
+            </p>
+          </div>
+
+          <!-- Item 3: Pocket Audio Loop -->
+          <div class="guide-card">
+            <div class="guide-card-header">
+              <div class="guide-icon-box purple">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 18v-6a9 9 0 0 1 18 0v6"></path>
+                  <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path>
+                </svg>
+              </div>
+              <div class="guide-card-title-wrap">
+                <h4>Pocket Audio Loop</h4>
+                <span class="guide-ar-title">المراجعة الصوتية في الجيب</span>
+              </div>
+              <span class="guide-tag">Hands-Free</span>
+            </div>
+            <p class="guide-card-desc">
+              مراجعة بدون استخدام يديك إطلاقاً؛ يقوم بتشغيل كلمات الوحدة بالترتيب مع نطقها بالإنجليزية ثم بالترجمة العربية بتكرار دوري وفترات راحة مريحة، مثالية للمواصلات أو التمارين الرياضية.
+            </p>
+          </div>
+
+          <!-- Item 4: Practice Arena -->
+          <div class="guide-card">
+            <div class="guide-card-header">
+              <div class="guide-icon-box amber">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <circle cx="12" cy="12" r="6"></circle>
+                  <circle cx="12" cy="12" r="2"></circle>
+                </svg>
+              </div>
+              <div class="guide-card-title-wrap">
+                <h4>Practice Arena</h4>
+                <span class="guide-ar-title">حلبة الاختبارات والتمارين</span>
+              </div>
+              <span class="guide-tag">Testing</span>
+            </div>
+            <p class="guide-card-desc">
+              3 أنماط اختبار تفاعلية: <b>اختيار من متعدد (Multiple Choice)</b> لقياس التعرف السريع، <b>اختبار الإملاء (Spelling Test)</b> لكتابة الكلمة غيباً، و<b>لعبة التوصيل (Match Game)</b> لربط الإنجليزي بالعربي بأعلى سرعة.
+            </p>
+          </div>
+
+          <!-- Item 5: Active Context Builder -->
+          <div class="guide-card">
+            <div class="guide-card-header">
+              <div class="guide-icon-box emerald">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2L12 3z"></path>
+                </svg>
+              </div>
+              <div class="guide-card-title-wrap">
+                <h4>Context Builder</h4>
+                <span class="guide-ar-title">بناء الجمل والسياق الفعلي</span>
+              </div>
+              <span class="guide-tag">Mastery +15%</span>
+            </div>
+            <p class="guide-card-desc">
+              يطلب منك كتابة جملة إنجليزية كاملة تضع فيها الكلمة في سياق واقعي. كتابتك للجملة تمنح الكلمة فوراً <b>+15%</b> زيادة إتقان وتنقلها إلى الذاكرة النشطة طويلة المدى.
+            </p>
+          </div>
+
+          <!-- Item 6: Word Manager & Bulk Import -->
+          <div class="guide-card">
+            <div class="guide-card-header">
+              <div class="guide-icon-box cyan">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"></path>
+                  <line x1="8" y1="7" x2="16" y2="7"></line>
+                  <line x1="8" y1="11" x2="16" y2="11"></line>
+                </svg>
+              </div>
+              <div class="guide-card-title-wrap">
+                <h4>Word Manager</h4>
+                <span class="guide-ar-title">إدارة واستيراد الكلمات</span>
+              </div>
+              <span class="guide-tag">Manager</span>
+            </div>
+            <p class="guide-card-desc">
+              جدول إلكتروني متكامل للبحث والفلترة وتعديل أي كلمة، مع خاصية <b>Batch Import</b> للصق أو استيراد مئات الكلمات دفعة واحدة من ملفات Excel أو نصوص خارجية.
+            </p>
+          </div>
+
+          <!-- Item 7: Mistakes Deck -->
+          <div class="guide-card">
+            <div class="guide-card-header">
+              <div class="guide-icon-box rose">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+              </div>
+              <div class="guide-card-title-wrap">
+                <h4>Mistakes Deck</h4>
+                <span class="guide-ar-title">صندوق الأخطاء والتحدي</span>
+              </div>
+              <span class="guide-tag">Smart Deck</span>
+            </div>
+            <p class="guide-card-desc">
+              أي كلمة تضغط عليها Hard أو تخطئ فيها أثناء الاختبارات تنتقل تلقائياً إلى هنا. لا تتخرج الكلمة من الصندوق إلا بعد الإجابة عليها مرتين متتاليتين بشكل صحيح لضمان حفظها.
+            </p>
+          </div>
+
+          <!-- Item 8: Units & Sub-Parts -->
+          <div class="guide-card">
+            <div class="guide-card-header">
+              <div class="guide-icon-box blue">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                </svg>
+              </div>
+              <div class="guide-card-title-wrap">
+                <h4>Units &amp; Parts</h4>
+                <span class="guide-ar-title">الوحدات وتقسيم الأجزاء</span>
+              </div>
+              <span class="guide-tag">Folders</span>
+            </div>
+            <p class="guide-card-desc">
+              تنظيم الكلمات في وحدات مستقلة (Folders)، مع زر <b>+ Add Part</b> لتقسيم الوحدات الكبيرة إلى أجزاء صغيرة (Part 1, Part 2...) لدراسة دفعات خفيفة بدون إرهاق.
+            </p>
+          </div>
+
+          <!-- Item 9: Auto-Updater & Red Dot -->
+          <div class="guide-card">
+            <div class="guide-card-header">
+              <div class="guide-icon-box emerald">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"></path>
+                </svg>
+              </div>
+              <div class="guide-card-title-wrap">
+                <h4>Auto-Updater &amp; Red Dot</h4>
+                <span class="guide-ar-title">التحديث التلقائي والنقطة الحمراء</span>
+              </div>
+              <span class="guide-tag">Cloud</span>
+            </div>
+            <p class="guide-card-desc">
+              عند توفر أي إصدار جديد، تظهر <b>نقطة حمراء 🔴 تنبيهية</b> على زر التحديث. بضغطة زر واحدة يظهر شريط تقدم بنسبة مئوية واضحة وينزل التحديث تلقائياً دون فقدان بياناتك.
+            </p>
+          </div>
+
+          <!-- Item 10: Keyboard Shortcuts -->
+          <div class="guide-card">
+            <div class="guide-card-header">
+              <div class="guide-icon-box purple">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect>
+                  <line x1="6" y1="8" x2="6" y2="8"></line>
+                  <line x1="10" y1="8" x2="10" y2="8"></line>
+                  <line x1="14" y1="8" x2="14" y2="8"></line>
+                  <line x1="18" y1="8" x2="18" y2="8"></line>
+                  <line x1="7" y1="16" x2="17" y2="16"></line>
+                </svg>
+              </div>
+              <div class="guide-card-title-wrap">
+                <h4>Keyboard Shortcuts</h4>
+                <span class="guide-ar-title">اختصارات لوحة المفاتيح</span>
+              </div>
+              <span class="guide-tag">Speed</span>
+            </div>
+            <p class="guide-card-desc">
+              <kbd>Space</kbd> لقلب الكارت &bull; <kbd>1</kbd> تقييم Hard &bull; <kbd>2</kbd> تقييم Good &bull; <kbd>3</kbd> تقييم Easy &bull; <kbd>→</kbd> / <kbd>←</kbd> التنقل بين الكروت &bull; <kbd>R</kbd> إعادة النطق &bull; <kbd>S</kbd> نطق بطيء.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="dialog-footer">
+        <button type="button" class="btn-update-confirm" id="btnGotItGuide">
+          <span>فهمت! ابدأ الآن (Got it!)</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- ══════════════════ IN-APP AUTO-UPDATE MODAL ══════════════════ -->
   <div class="modal-backdrop hidden" id="updateModalBackdrop">
     <div class="modal-dialog update-dialog" role="dialog" aria-modal="true" aria-labelledby="updateModalTitle">
@@ -806,25 +1076,19 @@
           </div>
         </div>
 
-        <div class="update-notes-card">
-          <div class="notes-hdr">What's New / تفاصيل التحديث:</div>
-          <div class="notes-content" id="lblUpdateNotes">
-            New improvements and bug fixes.
+        <!-- Updating Progress Box with Percentage Bar -->
+        <div class="update-progress-container hidden" id="updateProgressBox">
+          <div class="progress-header">
+            <div class="progress-header-left">
+              <div class="spinner-circle-mini"></div>
+              <span class="progress-label" id="lblUpdateProgressStatus">جاري بدء التحديث...</span>
+            </div>
+            <span class="progress-percent-badge" id="lblUpdatePercent">0%</span>
           </div>
-        </div>
-
-        <div class="update-data-safe-note">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-            <polyline points="9 12 11 14 15 10"/>
-          </svg>
-          <span>جميع كلماتك ووحداتك وتقدمك في الحفظ محفوظة بالكامل 100% ولن تتأثر.</span>
-        </div>
-
-        <!-- Updating Spinner & Progress -->
-        <div class="update-progress-box hidden" id="updateProgressBox">
-          <div class="spinner-circle"></div>
-          <div class="progress-label" id="lblUpdateProgressStatus">جاري تنزيل ملفات التحديث وتثبيتها...</div>
+          <div class="progress-track">
+            <div class="progress-fill" id="updateProgressFill" style="width: 0%;"></div>
+          </div>
+          <div class="progress-details" id="lblUpdateFileDetails">جاري الاتصال بـ GitHub...</div>
         </div>
       </div>
 

@@ -1,8 +1,8 @@
 {
-  "version": "1.0.7",
-  "build": 8,
-  "date": "2026-11-20",
-  "notes": "Ultra-smooth sidebar, clean streamlined UI, Active Context Builder mode, Pocket Audio Loop, Slow Voice (0.6x), and Glass Modals.",
+  "version": "1.0.8",
+  "build": 9,
+  "date": "2026-11-21",
+  "notes": "Added 'How to Use Me' guide, update percentage progress bar, red update dot, and smooth sidebar enhancements.",
   "files": [
     "index.html",
     "css/style.css",

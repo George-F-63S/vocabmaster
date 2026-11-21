@@ -2392,24 +2392,18 @@ function bindAllEvents() {
 //  8. UTILITIES, AUTO-UPDATER & BOOTSTRAP
 // ══════════════════════════════════════════════════════════════
 
+const GITHUB_REPO = "George-F-63S/vocabmaster";
+const GITHUB_RAW_BASE = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/`;
 const UPDATER_PORT = 49555;
 const UPDATER_BASE = `http://127.0.0.1:${UPDATER_PORT}/api`;
 let appCurrentVersion = "1.0.2";
+let appCurrentBuild = 3;
 
 function startUpdaterHeartbeat() {
-  // Ping local C# launcher every 20 seconds to keep it informed the app is open
+  // Ping local C# launcher every 15 seconds to keep it informed the app is open
   setInterval(() => {
     fetch(`${UPDATER_BASE}/heartbeat`, { method: "POST" }).catch(() => {});
-  }, 20000);
-
-  // Send clean shutdown signal on window close / unload
-  window.addEventListener("beforeunload", () => {
-    try {
-      if (navigator.sendBeacon) {
-        navigator.sendBeacon(`${UPDATER_BASE}/shutdown`);
-      }
-    } catch (e) {}
-  });
+  }, 15000);
 }
 
 async function fetchCurrentVersion() {
@@ -2417,92 +2411,288 @@ async function fetchCurrentVersion() {
     const res = await fetch(`${UPDATER_BASE}/version`);
     if (res.ok) {
       const data = await res.json();
-      if (data && data.version) {
-        appCurrentVersion = data.version;
-        const pill = $("#sidebarVersionPill");
-        if (pill) pill.textContent = `v${appCurrentVersion}`;
-        const desc = $("#popoverVersionDesc");
-        if (desc) desc.textContent = `Current version: v${appCurrentVersion}`;
+      if (data) {
+        if (data.version) appCurrentVersion = data.version;
+        if (data.build) appCurrentBuild = Number(data.build) || appCurrentBuild;
       }
     }
-  } catch (e) {}
+  } catch (e) {
+    try {
+      const resLocal = await fetch("./version.json?t=" + Date.now());
+      if (resLocal.ok) {
+        const data = await resLocal.json();
+        if (data.version) appCurrentVersion = data.version;
+        if (data.build) appCurrentBuild = Number(data.build) || appCurrentBuild;
+      }
+    } catch (_) {}
+  }
+  const pill = $("#sidebarVersionPill");
+  if (pill) pill.textContent = `v${appCurrentVersion}`;
+  const desc = $("#popoverVersionDesc");
+  if (desc) desc.textContent = `Current version: v${appCurrentVersion}`;
+}
+
+let latestCachedUpdateData = null;
+
+function setUpdateBadgeNotification(hasUpdate, updateData = null) {
+  const btnSide = $("#btnSidebarCheckUpdate");
+  const btnGear = $("#btnDataSettingsGear");
+  const rowPop = $("#btnCheckUpdatePopover");
+  const desc = $("#popoverVersionDesc");
+  const verDot = document.querySelector("#sidebarVersionBadge .version-dot");
+
+  // Remove any previous dynamic red dot
+  const oldDot = $("#sidebarUpdateRedDot");
+  if (oldDot) oldDot.remove();
+  const oldGearDot = $("#gearUpdateRedDot");
+  if (oldGearDot) oldGearDot.remove();
+
+  if (hasUpdate) {
+    latestCachedUpdateData = updateData;
+    if (btnSide) {
+      btnSide.classList.add("has-update");
+      btnSide.style.position = "relative";
+      btnSide.style.borderColor = "rgba(239, 68, 68, 0.6)";
+      btnSide.style.color = "#f87171";
+      btnSide.setAttribute("title", `🚀 تحديث جديد متوفر (${updateData?.latestVersion || ""})! اضغط لتثبيته`);
+
+      // Real DOM dot with inline styles
+      const dot = document.createElement("span");
+      dot.id = "sidebarUpdateRedDot";
+      dot.style.cssText = "position:absolute; top:-3px; right:-3px; width:10px; height:10px; background:#ef4444; border:2px solid #0f172a; border-radius:50%; box-shadow:0 0 10px #ef4444; pointer-events:none; z-index:99; animation: pulseUpdateRedDot 1.8s infinite ease-in-out;";
+      btnSide.appendChild(dot);
+    }
+    if (verDot) {
+      verDot.style.background = "#ef4444";
+      verDot.style.boxShadow = "0 0 10px rgba(239, 68, 68, 0.9)";
+    }
+    if (btnGear) {
+      btnGear.classList.add("has-update");
+      btnGear.style.position = "relative";
+      const gearDot = document.createElement("span");
+      gearDot.id = "gearUpdateRedDot";
+      gearDot.style.cssText = "position:absolute; top:1px; right:1px; width:9px; height:9px; background:#ef4444; border:2px solid #0f172a; border-radius:50%; box-shadow:0 0 10px #ef4444; pointer-events:none; z-index:99;";
+      btnGear.appendChild(gearDot);
+    }
+    if (rowPop) rowPop.classList.add("has-update");
+    if (desc && updateData?.latestVersion) {
+      desc.innerHTML = `<span style="color:#f87171; font-weight:700;">🚀 New update ready: v${updateData.latestVersion}</span>`;
+    }
+  } else {
+    latestCachedUpdateData = null;
+    if (btnSide) {
+      btnSide.classList.remove("has-update");
+      btnSide.style.borderColor = "";
+      btnSide.style.color = "";
+      btnSide.setAttribute("title", "Check for updates");
+    }
+    if (verDot) {
+      verDot.style.background = "#10b981";
+      verDot.style.boxShadow = "0 0 8px rgba(16, 185, 129, 0.6)";
+    }
+    if (btnGear) {
+      btnGear.classList.remove("has-update");
+    }
+    if (rowPop) rowPop.classList.remove("has-update");
+    if (desc) {
+      desc.textContent = `Current version: v${appCurrentVersion}`;
+    }
+  }
 }
 
 async function checkForUpdates(isManual = false) {
   if (isManual) {
-    toast("🔍 جاري التحقق من وجود تحديثات جديدة...", "info");
+    toast("🔍 جاري التحقق من وجود تحديثات على GitHub...", "info");
   }
 
+  let updateData = null;
+
+  // 1. First try checking through local C# launcher if active
   try {
     const res = await fetch(`${UPDATER_BASE}/check-update`);
-    if (!res.ok) throw new Error("Connection failed");
-    const data = await res.json();
+    if (res.ok) {
+      updateData = await res.json();
+    }
+  } catch (e) {
+    // Local server not running or busy; fallback to direct GitHub check
+  }
 
-    if (data.offline) {
+  // 2. Fallback: Query GitHub Raw API directly from browser
+  if (!updateData || updateData.offline) {
+    try {
+      const remoteRes = await fetch(`${GITHUB_RAW_BASE}version.json?_nocache=${Date.now()}`, {
+        cache: "no-store",
+        headers: { "Pragma": "no-cache", "Cache-Control": "no-cache" }
+      });
+      if (!remoteRes.ok) throw new Error("GitHub unreachable");
+      const remote = await remoteRes.json();
+      const remoteBuild = Number(remote.build) || 1;
+      const remoteVer = remote.version || "1.0.0";
+      const hasUpdate = (remoteBuild > appCurrentBuild) || (remoteVer !== appCurrentVersion);
+
+      updateData = {
+        hasUpdate: hasUpdate,
+        currentVersion: appCurrentVersion,
+        latestVersion: remoteVer,
+        notes: remote.notes || "",
+        date: remote.date || ""
+      };
+    } catch (err) {
       if (isManual) {
-        toast("⚠️ لا يوجد اتصال بالإنترنت للتحقق من التحديثات.", "error");
+        toast("⚠️ تعذر الاتصال بـ GitHub. تأكد من اتصال الإنترنت.", "error");
       }
       return;
     }
+  }
 
-    if (data.hasUpdate) {
-      showUpdateModal(data);
-    } else {
-      if (isManual) {
-        toast(`✨ أنت تستخدم أحدث إصدار بالفعل (v${data.currentVersion || appCurrentVersion})`, "success");
-      }
-    }
-  } catch (err) {
+  if (updateData.hasUpdate) {
+    setUpdateBadgeNotification(true, updateData);
     if (isManual) {
-      toast("⚠️ تعذر الاتصال بمركز التحديثات.", "error");
+      showUpdateModal(updateData);
+    }
+  } else {
+    setUpdateBadgeNotification(false);
+    if (isManual) {
+      toast(`✨ أنت تستخدم أحدث إصدار بالفعل (v${updateData.currentVersion || appCurrentVersion})`, "success");
     }
   }
+}
+
+let isApplyingUpdate = false;
+let progressPollTimer = null;
+
+function setUpdateProgressUI(percent, statusText, detailsText) {
+  const lblPercent = $("#lblUpdatePercent");
+  const fill = $("#updateProgressFill");
+  const lblStatus = $("#lblUpdateProgressStatus");
+  const lblDetails = $("#lblUpdateFileDetails");
+
+  const safePercent = Math.min(100, Math.max(0, Math.round(percent)));
+  if (lblPercent) lblPercent.textContent = `${safePercent}%`;
+  if (fill) fill.style.width = `${safePercent}%`;
+  if (lblStatus && statusText) lblStatus.textContent = statusText;
+  if (lblDetails && detailsText) lblDetails.textContent = detailsText;
 }
 
 function showUpdateModal(data) {
   const modal = $("#updateModalBackdrop");
   if (!modal) return;
 
+  if (progressPollTimer) {
+    clearInterval(progressPollTimer);
+    progressPollTimer = null;
+  }
+  isApplyingUpdate = false;
   const lblCur = $("#lblCurrentVersion");
   const lblLat = $("#lblLatestVersion");
   const lblNotes = $("#lblUpdateNotes");
   const progressBox = $("#updateProgressBox");
   const footer = $("#updateDialogFooter");
   const btnClose = $("#btnCloseUpdateModal");
+  const btnConfirm = $("#btnConfirmApplyUpdate");
 
   if (lblCur) lblCur.textContent = `v${data.currentVersion || appCurrentVersion}`;
   if (lblLat) lblLat.textContent = `v${data.latestVersion || "New"}`;
   if (lblNotes) lblNotes.textContent = data.notes || "تحسينات عامة وإصلاحات وتحديثات جديدة.";
 
-  if (progressBox) progressBox.classList.add("hidden");
-  if (footer) footer.classList.remove("hidden");
+  setUpdateProgressUI(0, "جاري بدء التحديث...", "جاري الاتصال بـ GitHub...");
+
+  if (progressBox) {
+    progressBox.classList.add("hidden");
+    progressBox.style.display = "none";
+  }
+  if (footer) {
+    footer.classList.remove("hidden");
+    footer.style.display = "flex";
+  }
+  if (btnConfirm) {
+    btnConfirm.disabled = false;
+    btnConfirm.style.pointerEvents = "";
+    btnConfirm.style.opacity = "";
+  }
   if (btnClose) btnClose.style.display = "";
 
   modal.classList.remove("hidden");
 }
 
 function hideUpdateModal() {
+  if (isApplyingUpdate) return;
+  if (progressPollTimer) {
+    clearInterval(progressPollTimer);
+    progressPollTimer = null;
+  }
   const modal = $("#updateModalBackdrop");
   if (modal) modal.classList.add("hidden");
 }
 
 async function applyUpdateNow() {
+  if (isApplyingUpdate) return;
+  isApplyingUpdate = true;
+
+  const btnConfirm = $("#btnConfirmApplyUpdate");
   const progressBox = $("#updateProgressBox");
   const footer = $("#updateDialogFooter");
-  const statusLbl = $("#lblUpdateProgressStatus");
   const btnClose = $("#btnCloseUpdateModal");
 
-  if (progressBox) progressBox.classList.remove("hidden");
-  if (footer) footer.classList.add("hidden");
+  if (btnConfirm) {
+    btnConfirm.disabled = true;
+    btnConfirm.style.pointerEvents = "none";
+    btnConfirm.style.opacity = "0.5";
+  }
+  if (footer) {
+    footer.classList.add("hidden");
+    footer.style.display = "none";
+  }
+  if (progressBox) {
+    progressBox.classList.remove("hidden");
+    progressBox.style.display = "flex";
+  }
   if (btnClose) btnClose.style.display = "none";
+
+  let simulatedPercent = 10;
+  setUpdateProgressUI(simulatedPercent, "⏳ جاري بدء تنزيل ملفات التحديث...", "جاري الاتصال بـ GitHub...");
+
+  // Start polling update progress (with smooth fallback)
+  progressPollTimer = setInterval(async () => {
+    let gotLiveProgress = false;
+    try {
+      const res = await fetch(`${UPDATER_BASE}/update-progress?t=${Date.now()}`);
+      if (res.ok) {
+        const prog = await res.json();
+        if (prog && prog.isUpdating) {
+          gotLiveProgress = true;
+          const detail = prog.file ? `الملف: ${prog.file} (${prog.completed || 0}/${prog.total || 8})` : "جاري تنزيل الملفات...";
+          setUpdateProgressUI(prog.percent || 15, prog.status || "جاري التنزيل...", detail);
+        }
+      }
+    } catch (_) {}
+
+    if (!gotLiveProgress) {
+      if (simulatedPercent < 88) {
+        simulatedPercent += Math.floor(Math.random() * 7) + 5;
+        if (simulatedPercent > 88) simulatedPercent = 88;
+        setUpdateProgressUI(
+          simulatedPercent,
+          "⏳ جاري تنزيل ملفات التحديث وتثبيتها...",
+          `جاري تنزيل الملفات (${simulatedPercent}%)...`
+        );
+      }
+    }
+  }, 220);
 
   try {
     const res = await fetch(`${UPDATER_BASE}/apply-update`, { method: "POST" });
+    if (!res.ok) throw new Error("تعذر الاتصال بمركز التحديثات في البرنامج");
     const data = await res.json();
 
+    if (progressPollTimer) {
+      clearInterval(progressPollTimer);
+      progressPollTimer = null;
+    }
+
     if (data.success) {
-      if (statusLbl) statusLbl.textContent = "✅ تم تثبيت التحديث بنجاح! جاري إعادة التحميل...";
-      toast("🚀 تم تثبيت التحديث بنجاح! جاري التحديث...", "success");
+      setUpdateProgressUI(100, "✅ تم اكتمال التحديث وتثبيت الملفات 100%!", "جاري إعادة تشغيل التطبيق بالنسخة الجديدة...");
+      toast("🚀 تم تثبيت التحديث بنجاح (100%)!", "success");
       setTimeout(() => {
         window.location.reload();
       }, 1200);
@@ -2510,19 +2700,55 @@ async function applyUpdateNow() {
       throw new Error(data.error || "فشل تنزيل ملفات التحديث");
     }
   } catch (err) {
-    if (statusLbl) statusLbl.textContent = `❌ فشل التحديث: ${err.message}`;
-    toast(`❌ فشل التحديث: ${err.message}`, "error");
-    setTimeout(() => {
-      if (progressBox) progressBox.classList.add("hidden");
-      if (footer) footer.classList.remove("hidden");
-      if (btnClose) btnClose.style.display = "";
-    }, 3000);
+    if (progressPollTimer) {
+      clearInterval(progressPollTimer);
+      progressPollTimer = null;
+    }
+    isApplyingUpdate = false;
+    if (btnConfirm) {
+      btnConfirm.disabled = false;
+      btnConfirm.style.pointerEvents = "";
+      btnConfirm.style.opacity = "";
+    }
+    const statusLbl = $("#lblUpdateProgressStatus");
+    if (statusLbl) {
+      statusLbl.innerHTML = `
+        <div style="font-size:0.88rem; line-height:1.6; margin-bottom:12px; color:#cbd5e1;">
+          ⚠️ تعذر التحديث التلقائي: ${escapeHTML(err.message)}<br>
+          يمكنك المحاولة مجدداً أو تحميل التحديث يدوياً من GitHub:
+        </div>
+        <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:8px;">
+          <button type="button" id="btnRetryUpdate" style="padding:8px 16px; border-radius:10px; background:#38bdf8; color:#0f172a; font-weight:700; border:none; cursor:pointer;">
+            🔄 إعادة المحاولة
+          </button>
+          <a href="https://github.com/${GITHUB_REPO}/releases" target="_blank" style="display:inline-block; padding:8px 16px; border-radius:10px; background:rgba(255,255,255,0.1); color:#fff; font-weight:600; text-decoration:none;">
+            ⬇️ GitHub Releases
+          </a>
+        </div>
+      `;
+      const btnRetry = $("#btnRetryUpdate");
+      if (btnRetry) btnRetry.addEventListener("click", applyUpdateNow);
+    }
+    toast(`⚠️ ${err.message}`, "error");
+    if (footer) {
+      footer.classList.remove("hidden");
+      footer.style.display = "flex";
+    }
+    if (btnClose) btnClose.style.display = "";
   }
 }
 
 function initUpdaterEvents() {
   const btnSide = $("#btnSidebarCheckUpdate");
-  if (btnSide) btnSide.addEventListener("click", () => checkForUpdates(true));
+  if (btnSide) {
+    btnSide.addEventListener("click", () => {
+      if (latestCachedUpdateData && latestCachedUpdateData.hasUpdate) {
+        showUpdateModal(latestCachedUpdateData);
+      } else {
+        checkForUpdates(true);
+      }
+    });
+  }
 
   const btnPop = $("#btnCheckUpdatePopover");
   if (btnPop) {
@@ -2534,7 +2760,11 @@ function initUpdaterEvents() {
         btnGear.classList.remove("active");
         btnGear.setAttribute("aria-expanded", "false");
       }
-      checkForUpdates(true);
+      if (latestCachedUpdateData && latestCachedUpdateData.hasUpdate) {
+        showUpdateModal(latestCachedUpdateData);
+      } else {
+        checkForUpdates(true);
+      }
     });
   }
 
@@ -2546,6 +2776,44 @@ function initUpdaterEvents() {
 
   const btnClose = $("#btnCloseUpdateModal");
   if (btnClose) btnClose.addEventListener("click", hideUpdateModal);
+}
+
+function showGuideModal() {
+  const modal = $("#guideModalBackdrop");
+  if (modal) modal.classList.remove("hidden");
+}
+
+function hideGuideModal() {
+  const modal = $("#guideModalBackdrop");
+  if (modal) modal.classList.add("hidden");
+}
+
+function initGuideEvents() {
+  const btnSide = $("#btnSidebarHowToUse");
+  if (btnSide) btnSide.addEventListener("click", showGuideModal);
+
+  const btnHeader = $("#btnHeaderHowToUse");
+  if (btnHeader) btnHeader.addEventListener("click", showGuideModal);
+
+  const btnPop = $("#btnHowToUsePopover");
+  if (btnPop) {
+    btnPop.addEventListener("click", () => {
+      const popover = $("#dataSettingsPopover");
+      const btnGear = $("#btnDataSettingsGear");
+      if (popover) popover.classList.remove("open");
+      if (btnGear) {
+        btnGear.classList.remove("active");
+        btnGear.setAttribute("aria-expanded", "false");
+      }
+      showGuideModal();
+    });
+  }
+
+  const btnClose = $("#btnCloseGuideModal");
+  if (btnClose) btnClose.addEventListener("click", hideGuideModal);
+
+  const btnGotIt = $("#btnGotItGuide");
+  if (btnGotIt) btnGotIt.addEventListener("click", hideGuideModal);
 }
 
 function shuffle(arr) {
@@ -2578,13 +2846,17 @@ document.addEventListener("DOMContentLoaded", () => {
   loadState();
   bindAllEvents();
   initUpdaterEvents();
+  initGuideEvents();
   startUpdaterHeartbeat();
   fetchCurrentVersion();
   renderUnitsToolbar();
   switchAppMode("flashcards");
 
-  // Silent update check in background after 3 seconds
+  // Check for updates in background on startup (after 800ms) and periodically
   setTimeout(() => {
     checkForUpdates(false);
-  }, 3000);
+  }, 800);
+  setInterval(() => {
+    checkForUpdates(false);
+  }, 60000);
 });
