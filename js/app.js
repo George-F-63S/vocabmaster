@@ -1,4 +1,4 @@
-/* ═══════════════════════════════════════════════════════════════
+﻿/* ═══════════════════════════════════════════════════════════════
    VocabMaster Ultra V3 — app.js
    100% Offline • Pure Decks • Smart Mistakes • 4 Quiz Modes • Bento + Table
    ═══════════════════════════════════════════════════════════════ */
@@ -2805,11 +2805,20 @@ async function applyUpdateNow() {
     }
 
     if (data.success) {
-      setUpdateProgressUI(100, "✅ تم اكتمال التحديث وتثبيت الملفات 100%!", "جاري إعادة تشغيل التطبيق بالنسخة الجديدة...");
-      toast("🚀 تم تثبيت التحديث بنجاح (100%)!", "success");
-      setTimeout(() => {
-        window.location.reload();
-      }, 1200);
+      if (data.restarting) {
+        setUpdateProgressUI(
+          100,
+          "✅ تم اكتمال التحديث وتثبيت الملفات 100%!",
+          "🚀 جاري إغلاق التطبيق وإعادة تشغيله تلقائياً بالنسخة الجديدة..."
+        );
+        toast("🚀 جاري إعادة تشغيل VocabMaster بالنسخة الجديدة...", "success");
+      } else {
+        setUpdateProgressUI(100, "✅ تم اكتمال التحديث وتثبيت الملفات 100%!", "جاري تحديث واجهة التطبيق...");
+        toast("🚀 تم تثبيت التحديث بنجاح (100%)!", "success");
+        setTimeout(() => {
+          window.location.reload();
+        }, 1200);
+      }
     } else {
       throw new Error(data.error || "فشل تنزيل ملفات التحديث");
     }
