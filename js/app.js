@@ -347,13 +347,31 @@ function updateHeaderStats() {
   const arenaLabel = $("#quizArenaDeckLabel");
   if (arenaLabel) arenaLabel.textContent = currentName;
 
+  const isMistakes = state.activeUnitId === "mistakes";
   const tableTag = $("#tableDeckTag");
   if (tableTag) {
     tableTag.textContent = currentName;
-    tableTag.classList.toggle("mistakes-mode", state.activeUnitId === "mistakes");
+    tableTag.classList.toggle("mistakes-mode", isMistakes);
   }
   const bulkTarget = $("#bulkTargetUnitName");
-  if (bulkTarget) bulkTarget.textContent = currentName;
+  if (bulkTarget) {
+    if (isMistakes || state.activeUnitId === "all") {
+      const fallbackUnitId = getFirstAvailableUnitId();
+      bulkTarget.textContent = (fallbackUnitId && state.units[fallbackUnitId]) ? state.units[fallbackUnitId].name : "Select Unit";
+    } else {
+      bulkTarget.textContent = currentName;
+    }
+  }
+
+  // Hide New Vocabulary Entry & Batch Import when in Mistakes!
+  const manageAddGrid = $("#manageAddGrid") || document.querySelector(".manage-grid");
+  const mistakesBanner = $("#mistakesHeaderBanner");
+  if (manageAddGrid) {
+    manageAddGrid.style.display = isMistakes ? "none" : "";
+  }
+  if (mistakesBanner) {
+    mistakesBanner.style.display = isMistakes ? "flex" : "none";
+  }
 }
 
 function renderUnitsToolbar() {
@@ -2099,6 +2117,11 @@ function switchAppMode(mode) {
     else renderContextBuilder();
   } else if (mode === "manage") {
     $("#managePanel").classList.add("active");
+    const isMistakes = state.activeUnitId === "mistakes";
+    const manageAddGrid = $("#manageAddGrid") || document.querySelector(".manage-grid");
+    const mistakesBanner = $("#mistakesHeaderBanner");
+    if (manageAddGrid) manageAddGrid.style.display = isMistakes ? "none" : "";
+    if (mistakesBanner) mistakesBanner.style.display = isMistakes ? "flex" : "none";
     populateAddWordUnitSelect();
     setExplorerView(state.explorerView);
   }
