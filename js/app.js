@@ -767,27 +767,117 @@ function deleteActiveUnit() {
 }
 
 function populateAddWordUnitSelect() {
-  const sel = $("#inputUnitSelect");
-  if (!sel) return;
-  sel.innerHTML = "";
-  getTopLevelUnits().forEach((u) => {
+  const unitSel = $("#inputTargetUnit");
+  const partSel = $("#inputTargetPart");
+  const hiddenSel = $("#inputUnitSelect");
+  
+  // Fallback if older single select exists
+  if (!unitSel || !partSel) {
+    const sel = $("#inputUnitSelect");
+    if (!sel) return;
+    sel.innerHTML = "";
+    getTopLevelUnits().forEach((u) => {
+      const opt = document.createElement("option");
+      opt.value = u.id;
+      opt.textContent = `${u.name} (${u.words.length} words)`;
+      sel.appendChild(opt);
+      getChildParts(u.id).forEach((p) => {
+        const pOpt = document.createElement("option");
+        pOpt.value = p.id;
+        pOpt.textContent = `  ↳ ${u.name} › ${p.name} (${p.words.length} words)`;
+        sel.appendChild(pOpt);
+      });
+    });
+    return;
+  }
+
+  const topUnits = getTopLevelUnits();
+  if (topUnits.length === 0) {
+    unitSel.innerHTML = "<option value=''>No Units</option>";
+    partSel.innerHTML = "<option value=''>No Parts</option>";
+    if (hiddenSel) hiddenSel.value = "";
+    return;
+  }
+
+  // 1. Determine active Unit and Part defaults based on current state
+  let defaultUnitId = topUnits[0].id;
+  let defaultPartId = "";
+
+  if (state.activeUnitId && state.activeUnitId !== "all" && state.activeUnitId !== "mistakes" && state.units[state.activeUnitId]) {
+    const activeUnit = state.units[state.activeUnitId];
+    if (activeUnit.parentId && state.units[activeUnit.parentId]) {
+      defaultUnitId = activeUnit.parentId;
+      defaultPartId = activeUnit.id;
+    } else {
+      defaultUnitId = activeUnit.id;
+    }
+  }
+
+  // Preserve user's selection if they already selected another unit
+  const currentSelectedUnit = unitSel.value;
+  const targetUnitId = (currentSelectedUnit && state.units[currentSelectedUnit]) ? currentSelectedUnit : defaultUnitId;
+
+  // 2. Populate Unit Dropdown
+  unitSel.innerHTML = "";
+  topUnits.forEach((u) => {
     const opt = document.createElement("option");
     opt.value = u.id;
-    opt.textContent = `${u.name} (${u.words.length} words)`;
-    sel.appendChild(opt);
-
-    getChildParts(u.id).forEach((p) => {
-      const pOpt = document.createElement("option");
-      pOpt.value = p.id;
-      pOpt.textContent = `  ↳ ${u.name} › ${p.name} (${p.words.length} words)`;
-      sel.appendChild(pOpt);
-    });
+    const totalWords = getUnitTotalWordCount(u.id);
+    opt.textContent = `${u.name} (${totalWords} words)`;
+    if (u.id === targetUnitId) opt.selected = true;
+    unitSel.appendChild(opt);
   });
-  if (state.activeUnitId !== "all" && state.activeUnitId !== "mistakes" && state.units[state.activeUnitId]) {
-    sel.value = state.activeUnitId;
-  } else {
-    sel.value = getFirstAvailableUnitId();
+
+  // 3. Populate Parts Dropdown based on the selected Unit
+  function updatePartsForUnit(selectedUnitId, preferredPartId) {
+    partSel.innerHTML = "";
+    const parentUnit = state.units[selectedUnitId];
+    const childParts = getChildParts(selectedUnitId);
+
+    if (childParts.length > 0) {
+      childParts.forEach((p, idx) => {
+        const pOpt = document.createElement("option");
+        pOpt.value = p.id;
+        pOpt.textContent = `${p.name} (${p.words.length} words)`;
+        if (preferredPartId && p.id === preferredPartId) {
+          pOpt.selected = true;
+        } else if (!preferredPartId && idx === 0) {
+          pOpt.selected = true;
+        }
+        partSel.appendChild(pOpt);
+      });
+
+      // Also allow targeting the parent main container if desired
+      const mainOpt = document.createElement("option");
+      mainOpt.value = selectedUnitId;
+      mainOpt.textContent = `📁 ${parentUnit ? parentUnit.name : 'Main'} (Main Deck - ${parentUnit ? parentUnit.words.length : 0} words)`;
+      if (preferredPartId === selectedUnitId) mainOpt.selected = true;
+      partSel.appendChild(mainOpt);
+    } else {
+      // No parts exist yet for this unit
+      const opt = document.createElement("option");
+      opt.value = selectedUnitId;
+      opt.textContent = `${parentUnit ? parentUnit.name : 'Main'} (${parentUnit ? parentUnit.words.length : 0} words)`;
+      opt.selected = true;
+      partSel.appendChild(opt);
+    }
+
+    // Sync effective target ID
+    const effectiveId = partSel.value || selectedUnitId;
+    if (hiddenSel) hiddenSel.value = effectiveId;
   }
+
+  // Populate parts initially
+  updatePartsForUnit(unitSel.value, defaultPartId);
+
+  // Hook change events cleanly
+  unitSel.onchange = () => {
+    updatePartsForUnit(unitSel.value, null);
+  };
+
+  partSel.onchange = () => {
+    if (hiddenSel) hiddenSel.value = partSel.value || unitSel.value;
+  };
 }
 
 // ════════════════════════════════════════════════════
@@ -2361,7 +2451,7 @@ function bindAllEvents() {
     const m = $("#inputMeaning").value;
     const ex = $("#inputExample").value;
     const ea = $("#inputExampleAr").value;
-    const uid = $("#inputUnitSelect").value;
+    const uid = ($("#inputTargetPart") && $("#inputTargetPart").value) || ($("#inputTargetUnit") && $("#inputTargetUnit").value) || ($("#inputUnitSelect") ? $("#inputUnitSelect").value : getFirstAvailableUnitId());
     if (!w || !m) return toast("Word and Meaning are required!", "error");
     addSingleWord(w, t, m, ex, ea, uid);
     e.target.reset();
