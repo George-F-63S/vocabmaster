@@ -5,7 +5,9 @@
   "notes": "✨ إطلاق ثيم الألوان المشبعة الغامقة الفخمة (Deep Saturated Obsidian) وشعار الدرع الكريستالي النيون والذهب الخالص المشبع 100%!",
   "files": [
     "css/style.css",
+    "index.html",
     "assets/icons/logo.png",
+    "assets/icons/avatar-crest.png",
     "assets/icons/favicon.png",
     "assets/icons/favicon-16.png",
     "version.json"
