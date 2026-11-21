@@ -522,10 +522,17 @@
             </header>
 
             <form id="addWordForm" class="form-stack" autocomplete="off" style="margin-top: 16px;">
-              <div class="field-block">
-                <label class="field-label" for="inputUnitSelect">Target Deck</label>
-                <select id="inputUnitSelect" class="control-select"></select>
+              <div class="target-deck-grid">
+                <div class="field-block">
+                  <label class="field-label" for="inputTargetUnit">Target Unit</label>
+                  <select id="inputTargetUnit" class="control-select deck-select"></select>
+                </div>
+                <div class="field-block">
+                  <label class="field-label" for="inputTargetPart">Target Part</label>
+                  <select id="inputTargetPart" class="control-select deck-select"></select>
+                </div>
               </div>
+              <input type="hidden" id="inputUnitSelect" value="" />
 
               <div class="field-block">
                 <label class="field-label" for="inputWord">English Word</label>
