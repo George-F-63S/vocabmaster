@@ -2364,7 +2364,8 @@ function bindAllEvents() {
     e.target.value = "";
   });
   $("#btnExportActiveUnit").addEventListener("click", exportActiveUnit);
-  $("#btnExportAllData").addEventListener("click", exportAllData);
+  const expAllBtn = $("#btnExportAllData");
+  if (expAllBtn) expAllBtn.addEventListener("click", exportAllData);
   $("#btnResetAllApp").addEventListener("click", resetAllData);
 
   // Explorer filters & view toggle
