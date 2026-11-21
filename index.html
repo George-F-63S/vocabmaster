@@ -492,7 +492,15 @@
 
     <!-- ─────── VIEW 4: WORD MANAGER (ADD + IMPORT/EXPORT + EXPLORER) ─────── -->
     <section class="mode-panel" id="managePanel">
-      <div class="manage-grid">
+      <div class="mistakes-banner" id="mistakesHeaderBanner" style="display: none;">
+        <div class="mistakes-banner-icon">⚠️</div>
+        <div class="mistakes-banner-content">
+          <h3>Mistakes &amp; Smart Review Deck</h3>
+          <p>Words answered incorrectly during Flashcards or Practice Arena automatically appear here for focused review.</p>
+        </div>
+      </div>
+
+      <div class="manage-grid" id="manageAddGrid">
 
         <!-- 1. Add Single Word Form (New Vocabulary Entry) -->
         <div class="manage-card studio-card">
