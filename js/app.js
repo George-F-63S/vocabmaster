@@ -2725,14 +2725,17 @@ async function checkForUpdates(isManual = false) {
   try {
     const res = await fetch(`${UPDATER_BASE}/check-update`);
     if (res.ok) {
-      updateData = await res.json();
+      const data = await res.json();
+      if (data && !data.error) {
+        updateData = data;
+      }
     }
   } catch (e) {
     // Local server not running or busy; fallback to direct GitHub check
   }
 
   // 2. Fallback: Query GitHub Raw API directly from browser
-  if (!updateData || updateData.offline) {
+  if (!updateData || updateData.offline || updateData.error) {
     try {
       const remoteRes = await fetch(`${GITHUB_RAW_BASE}version.json?_nocache=${Date.now()}`, {
         cache: "no-store",
