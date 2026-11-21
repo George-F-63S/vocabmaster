@@ -2331,6 +2331,38 @@ body {
 .match-tile.wrong-flash { background: rgba(244, 63, 94, 0.28); border: 2px solid var(--accent-rose); }
 
 /* ═══════════════════════ WORD MANAGER & EXPLORER ═══════════════════════ */
+/* Mistakes Header Banner */
+.mistakes-banner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 22px;
+  border-radius: var(--radius);
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.14) 0%, rgba(239, 68, 68, 0.08) 100%);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 15px rgba(245, 158, 11, 0.15);
+  margin-bottom: 22px;
+  animation: fadeInDown 0.25s ease-out;
+}
+.mistakes-banner-icon {
+  font-size: 2rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.5));
+}
+.mistakes-banner-content h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #fbbf24;
+  margin-bottom: 2px;
+  letter-spacing: 0.3px;
+}
+.mistakes-banner-content p {
+  font-size: 0.82rem;
+  color: #94b0d8;
+  margin: 0;
+  line-height: 1.4;
+}
+
 .manage-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
