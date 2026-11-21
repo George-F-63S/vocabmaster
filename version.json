@@ -1,16 +1,13 @@
 {
-  "version": "1.0.9",
-  "build": 10,
+  "version": "1.1.0",
+  "build": 11,
   "date": "2026-11-21",
-  "notes": "New official VocabMaster crest logo, dark standalone titlebar, and streamlined UI.",
+  "notes": "✨ إطلاق ثيم الألوان المشبعة الغامقة الفخمة (Deep Saturated Obsidian) وشعار الدرع الكريستالي النيون والذهب الخالص المشبع 100%!",
   "files": [
-    "index.html",
     "css/style.css",
-    "js/app.js",
-    "manifest.json",
-    "version.json",
     "assets/icons/logo.png",
     "assets/icons/favicon.png",
-    "assets/icons/favicon-16.png"
+    "assets/icons/favicon-16.png",
+    "version.json"
   ]
 }
