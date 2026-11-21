@@ -1,8 +1,8 @@
 {
-  "version": "1.0.8",
-  "build": 9,
+  "version": "1.0.9",
+  "build": 10,
   "date": "2026-11-21",
-  "notes": "Added 'How to Use Me' guide, update percentage progress bar, red update dot, and smooth sidebar enhancements.",
+  "notes": "New official VocabMaster crest logo, dark standalone titlebar, and streamlined UI.",
   "files": [
     "index.html",
     "css/style.css",
