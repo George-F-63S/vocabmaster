@@ -2898,6 +2898,10 @@ async function applyUpdateNow() {
   }, 220);
 
   try {
+    if (window.chrome && window.chrome.webview) {
+      try { window.chrome.webview.postMessage("applyUpdate"); } catch (_) {}
+    }
+
     const res = await fetch(`${UPDATER_BASE}/apply-update`, { method: "POST" });
     if (!res.ok) throw new Error("تعذر الاتصال بمركز التحديثات في البرنامج");
     const data = await res.json();
@@ -2966,14 +2970,24 @@ async function applyUpdateNow() {
 
 function initUpdaterEvents() {
   const btnSide = $("#btnSidebarCheckUpdate");
+  const verBadge = $("#sidebarVersionBadge");
+
+  const triggerUpdateModal = () => {
+    if (latestCachedUpdateData && latestCachedUpdateData.hasUpdate) {
+      showUpdateModal(latestCachedUpdateData);
+    } else {
+      checkForUpdates(true);
+    }
+  };
+
   if (btnSide) {
-    btnSide.addEventListener("click", () => {
-      if (latestCachedUpdateData && latestCachedUpdateData.hasUpdate) {
-        showUpdateModal(latestCachedUpdateData);
-      } else {
-        checkForUpdates(true);
-      }
-    });
+    btnSide.addEventListener("click", triggerUpdateModal);
+  }
+
+  if (verBadge) {
+    verBadge.style.cursor = "pointer";
+    verBadge.setAttribute("title", "اضغط للتحقق من التحديثات");
+    verBadge.addEventListener("click", triggerUpdateModal);
   }
 
   const btnPop = $("#btnCheckUpdatePopover");
