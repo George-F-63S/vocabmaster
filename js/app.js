@@ -2939,10 +2939,6 @@ async function applyUpdateNow() {
   }, 220);
 
   try {
-    if (window.chrome && window.chrome.webview) {
-      try { window.chrome.webview.postMessage("applyUpdate"); } catch (_) {}
-    }
-
     const res = await fetch(`${UPDATER_BASE}/apply-update`, { method: "POST" });
     if (!res.ok) throw new Error("تعذر الاتصال بمركز التحديثات في البرنامج");
     const data = await res.json();
