@@ -2714,6 +2714,20 @@ function setUpdateBadgeNotification(hasUpdate, updateData = null) {
   }
 }
 
+function isNewerSemver(remote, current) {
+  try {
+    const r = (remote || "").replace(/^v/i, "").split(".").map(n => parseInt(n, 10) || 0);
+    const c = (current || "").replace(/^v/i, "").split(".").map(n => parseInt(n, 10) || 0);
+    for (let i = 0; i < Math.max(r.length, c.length); i++) {
+      const rv = r[i] || 0;
+      const cv = c[i] || 0;
+      if (rv > cv) return true;
+      if (rv < cv) return false;
+    }
+  } catch (_) {}
+  return false;
+}
+
 async function checkForUpdates(isManual = false) {
   if (isManual) {
     toast("🔍 جاري التحقق من وجود تحديثات على GitHub...", "info");
@@ -2734,25 +2748,52 @@ async function checkForUpdates(isManual = false) {
     // Local server not running or busy; fallback to direct GitHub check
   }
 
-  // 2. Fallback: Query GitHub Raw API directly from browser
+  // 2. Fallback: Query GitHub directly from browser
   if (!updateData || updateData.offline || updateData.error) {
     try {
-      const remoteRes = await fetch(`${GITHUB_RAW_BASE}version.json?_nocache=${Date.now()}`, {
-        cache: "no-store",
-        headers: { "Pragma": "no-cache", "Cache-Control": "no-cache" }
-      });
-      if (!remoteRes.ok) throw new Error("GitHub unreachable");
-      const remote = await remoteRes.json();
-      const remoteBuild = Number(remote.build) || 1;
-      const remoteVer = remote.version || "1.0.0";
-      const hasUpdate = (remoteBuild > appCurrentBuild) || (remoteVer !== appCurrentVersion);
+      let remoteVer = "1.0.0";
+      let remoteBuild = 1;
+      let notes = "";
+      let date = "";
+
+      try {
+        const remoteRes = await fetch(`${GITHUB_RAW_BASE}version.json?_nocache=${Date.now()}`, {
+          cache: "no-store",
+          headers: { "Pragma": "no-cache", "Cache-Control": "no-cache" }
+        });
+        if (remoteRes.ok) {
+          const remote = await remoteRes.json();
+          remoteVer = remote.version || "1.0.0";
+          remoteBuild = Number(remote.build) || 1;
+          notes = remote.notes || "";
+          date = remote.date || "";
+        } else {
+          throw new Error("Raw fetch failed");
+        }
+      } catch (_) {
+        const relRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest?_nocache=${Date.now()}`, {
+          headers: { "Accept": "application/vnd.github.v3+json" }
+        });
+        if (relRes.ok) {
+          const rel = await relRes.json();
+          remoteVer = (rel.tag_name || "1.0.0").replace(/^v/i, "");
+          notes = rel.body || "";
+        } else {
+          throw new Error("GitHub unreachable");
+        }
+      }
+
+      // STRICT: Only update if remote is strictly NEWER! NEVER downgrade!
+      const isNewer = isNewerSemver(remoteVer, appCurrentVersion);
+      const isHigherBuild = remoteBuild > appCurrentBuild;
+      const hasUpdate = (isHigherBuild || isNewer) && !isNewerSemver(appCurrentVersion, remoteVer);
 
       updateData = {
         hasUpdate: hasUpdate,
         currentVersion: appCurrentVersion,
         latestVersion: remoteVer,
-        notes: remote.notes || "",
-        date: remote.date || ""
+        notes: notes,
+        date: date
       };
     } catch (err) {
       if (isManual) {
