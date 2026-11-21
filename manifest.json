@@ -3,13 +3,28 @@
   "short_name": "VocabMaster",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#070c18",
-  "theme_color": "#00d4ff",
+  "background_color": "#030712",
+  "theme_color": "#00f0ff",
   "description": "The Ultimate English Vocabulary Trainer",
   "icons": [
     {
+      "src": "assets/icons/favicon-16.png",
+      "sizes": "16x16",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/icons/favicon-32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
       "src": "assets/icons/favicon.png",
       "sizes": "64x64",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/icons/avatar-crest.png",
+      "sizes": "256x256",
       "type": "image/png"
     },
     {
