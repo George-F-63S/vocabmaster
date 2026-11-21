@@ -2491,8 +2491,48 @@ body {
 }
 
 .control-select option {
-  background: #131b2e;
+  background: #070d1e;
   color: var(--text-primary);
+}
+
+.target-deck-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 600px) {
+  .target-deck-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.deck-select {
+  background-color: #070d1e;
+  border: 1px solid rgba(0, 240, 255, 0.22);
+  border-radius: 12px;
+  color: #ffffff;
+  padding: 10px 14px;
+  font-weight: 500;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2300f0ff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+}
+
+.deck-select:focus {
+  border-color: #00f0ff;
+  box-shadow: 0 0 0 3px rgba(0, 240, 255, 0.18), 0 0 15px rgba(0, 240, 255, 0.25);
+  background-color: #0a1329;
+}
+
+.deck-select option {
+  background: #070d1e;
+  color: #ffffff;
+  padding: 8px 12px;
 }
 
 .rtl-text {
