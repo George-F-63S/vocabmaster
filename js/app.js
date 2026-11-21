@@ -542,6 +542,7 @@ function renderUnitsToolbar() {
   }
 
   populateAddWordUnitSelect();
+  populateBulkUnitSelect();
 }
 
 function renderUnitPartsBar(parentId) {
@@ -877,6 +878,98 @@ function populateAddWordUnitSelect() {
 
   partSel.onchange = () => {
     if (hiddenSel) hiddenSel.value = partSel.value || unitSel.value;
+  };
+}
+
+function populateBulkUnitSelect() {
+  const unitSel = $("#selBulkUnit");
+  const partSel = $("#selBulkPart");
+  const targetBadge = $("#bulkTargetUnitName");
+  if (!unitSel || !partSel) return;
+
+  const topUnits = getTopLevelUnits();
+  if (topUnits.length === 0) {
+    unitSel.innerHTML = "<option value=''>No Units</option>";
+    partSel.innerHTML = "<option value=''>No Parts</option>";
+    if (targetBadge) targetBadge.textContent = "—";
+    return;
+  }
+
+  let defaultUnitId = topUnits[0].id;
+  let defaultPartId = "";
+
+  if (state.activeUnitId && state.activeUnitId !== "all" && state.activeUnitId !== "mistakes" && state.units[state.activeUnitId]) {
+    const activeUnit = state.units[state.activeUnitId];
+    if (activeUnit.parentId && state.units[activeUnit.parentId]) {
+      defaultUnitId = activeUnit.parentId;
+      defaultPartId = activeUnit.id;
+    } else {
+      defaultUnitId = activeUnit.id;
+    }
+  }
+
+  const currentSelectedUnit = unitSel.value;
+  const targetUnitId = (currentSelectedUnit && state.units[currentSelectedUnit]) ? currentSelectedUnit : defaultUnitId;
+
+  unitSel.innerHTML = "";
+  topUnits.forEach((u) => {
+    const opt = document.createElement("option");
+    opt.value = u.id;
+    const totalWords = getUnitTotalWordCount(u.id);
+    opt.textContent = `${u.name} (${totalWords} words)`;
+    if (u.id === targetUnitId) opt.selected = true;
+    unitSel.appendChild(opt);
+  });
+
+  function updateBulkPartsForUnit(selectedUnitId, preferredPartId) {
+    partSel.innerHTML = "";
+    const parentUnit = state.units[selectedUnitId];
+    const childParts = getChildParts(selectedUnitId);
+
+    if (childParts.length > 0) {
+      childParts.forEach((p, idx) => {
+        const pOpt = document.createElement("option");
+        pOpt.value = p.id;
+        pOpt.textContent = `${p.name} (${p.words.length} words)`;
+        if (preferredPartId && p.id === preferredPartId) {
+          pOpt.selected = true;
+        } else if (!preferredPartId && idx === 0) {
+          pOpt.selected = true;
+        }
+        partSel.appendChild(pOpt);
+      });
+
+      const mainOpt = document.createElement("option");
+      mainOpt.value = selectedUnitId;
+      mainOpt.textContent = `📁 ${parentUnit ? parentUnit.name : 'Main'} (Main Deck)`;
+      if (preferredPartId === selectedUnitId) mainOpt.selected = true;
+      partSel.appendChild(mainOpt);
+    } else {
+      const opt = document.createElement("option");
+      opt.value = selectedUnitId;
+      opt.textContent = `${parentUnit ? parentUnit.name : 'Main'} (${parentUnit ? parentUnit.words.length : 0} words)`;
+      opt.selected = true;
+      partSel.appendChild(opt);
+    }
+
+    syncBulkTargetBadge();
+  }
+
+  function syncBulkTargetBadge() {
+    if (!targetBadge) return;
+    const effectiveId = partSel.value || unitSel.value;
+    const unitObj = state.units[effectiveId];
+    targetBadge.textContent = unitObj ? unitObj.name : "—";
+  }
+
+  updateBulkPartsForUnit(unitSel.value, defaultPartId);
+
+  unitSel.onchange = () => {
+    updateBulkPartsForUnit(unitSel.value, null);
+  };
+
+  partSel.onchange = () => {
+    syncBulkTargetBadge();
   };
 }
 
@@ -1669,7 +1762,9 @@ function deleteWord(wordId, unitId) {
 function handleBulkAdd(text) {
   if (!text || !text.trim()) return toast("Paste words using format: word = meaning", "error");
 
-  const targetUnitId = state.activeUnitId === "all" || state.activeUnitId === "mistakes" ? getFirstAvailableUnitId() : state.activeUnitId;
+  const selectedPart = $("#selBulkPart") && $("#selBulkPart").value;
+  const selectedUnit = $("#selBulkUnit") && $("#selBulkUnit").value;
+  const targetUnitId = selectedPart || selectedUnit || (state.activeUnitId === "all" || state.activeUnitId === "mistakes" ? getFirstAvailableUnitId() : state.activeUnitId);
   const unit = state.units[targetUnitId];
   if (!unit) return toast("⚠️ Please create a unit / folder first (+ New Unit)!", "error");
 
@@ -1699,6 +1794,9 @@ function handleBulkAdd(text) {
     renderUnitsToolbar();
     renderExplorer();
     renderFlashcard();
+    populateAddWordUnitSelect();
+  populateBulkUnitSelect();
+    populateBulkUnitSelect();
     toast(`📥 Added ${count} words to "${unit.name}"`, "success");
   } else {
     toast("No lines matched the format: word = meaning", "error");
@@ -2213,6 +2311,7 @@ function switchAppMode(mode) {
     if (manageAddGrid) manageAddGrid.style.display = isMistakes ? "none" : "";
     if (mistakesBanner) mistakesBanner.style.display = isMistakes ? "flex" : "none";
     populateAddWordUnitSelect();
+  populateBulkUnitSelect();
     setExplorerView(state.explorerView);
   }
 }
@@ -2459,6 +2558,7 @@ function bindAllEvents() {
     if (inputTypeEl) inputTypeEl.value = "Noun";
     $$(".pos-pill").forEach((p) => p.classList.toggle("active", p.dataset.pos === "Noun"));
     populateAddWordUnitSelect();
+  populateBulkUnitSelect();
   });
 
   $("#btnAutoFill").addEventListener("click", () => {
