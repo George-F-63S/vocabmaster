@@ -1,19 +1,17 @@
 ﻿{
-  "version": "1.3.4",
-  "build": 27,
+  "version": "1.3.5",
+  "build": 28,
   "date": "2026-11-21",
-  "notes": "🚀 تحديث فائق السلاسة v1.3.4: اختبار شريط التقدم من 0% إلى 100% بدون أي رسائل خطأ.",
+  "notes": "⚡ تحديث ذكي فائق السرعة v1.3.5: تفعيل ميزة التحديث الانتقائي (تحميل ما تم تعديله فقط في ثوانٍ معدودة).",
+  "changed_files": [
+    "index.html",
+    "version.json",
+    "VocabMaster.exe"
+  ],
+  "update_exe": true,
   "files": [
     "index.html",
-    "css/style.css",
-    "js/app.js",
-    "assets/icons/logo.png",
-    "assets/icons/avatar-crest.png",
-    "assets/icons/favicon.png",
-    "assets/icons/favicon-16.png",
-    "assets/icons/favicon-32.png",
-    "assets/icons/app.ico",
-    "manifest.json",
-    "version.json"
+    "version.json",
+    "VocabMaster.exe"
   ]
 }
