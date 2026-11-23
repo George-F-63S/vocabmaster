@@ -1,16 +1,17 @@
 ﻿{
-  "version": "1.4.0",
-  "build": 32,
-  "date": "2026-11-21",
-  "notes": "🚀 إطلاق النسخة المحمولة المستقلة v1.4.0: تشغيل فوري بملف واحد بدون أي فك ضغط أو ملفات إضافية، مع الحفاظ على التحديث التلقائي فائق السرعة.",
+  "version": "1.4.1",
+  "build": 33,
+  "date": "2026-11-23",
+  "notes": "⚡ Audio Shortcuts & Guide Update v1.4.1: Bind 'R' for normal speech (1.0x) and 'S' for slow speech (0.6x) in Flashcards mode, with updated guide copy and ESC key modal closing.",
   "changed_files": [
     "index.html",
-    "version.json",
-    "VocabMaster.exe"
+    "js/app.js",
+    "version.json"
   ],
-  "update_exe": true,
+  "update_exe": false,
   "files": [
     "index.html",
+    "js/app.js",
     "version.json",
     "app.ico",
     "assets/icons/app.ico",
