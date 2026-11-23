@@ -3306,20 +3306,22 @@ select.input-field option { background: var(--bg-secondary); color: #fff; }
 
 .wordlist-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .input-field.search { width: 210px; }
-.filter-select { width: 180px; }
-.filter-select-sm { width: 235px; }
+.filter-select { width: 175px; min-width: 175px; }
+.filter-select-sm { width: 260px; min-width: 260px; }
 
 #filterMastery {
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.84rem;
   letter-spacing: 0.2px;
   cursor: pointer;
-  padding: 8px 12px;
+  padding: 8px 10px;
   border-radius: 9px;
   background-color: #0b1526;
   border: 1px solid rgba(56, 189, 248, 0.35);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  min-width: 260px;
+  text-overflow: clip;
 }
 
 #filterMastery:hover {
