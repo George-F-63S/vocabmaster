@@ -1,16 +1,18 @@
 ﻿{
-  "version": "1.4.1",
-  "build": 33,
-  "date": "2026-11-23",
-  "notes": "⚡ Audio Shortcuts & Guide Update v1.4.1: Bind 'R' for normal speech (1.0x) and 'S' for slow speech (0.6x) in Flashcards mode, with updated guide copy and ESC key modal closing.",
+  "version": "1.4.2",
+  "build": 34,
+  "date": "2026-11-24",
+  "notes": "✨ VocabMaster v1.4.2: Seamless Arabic & English keyboard shortcuts (e.code), refined Mastery & Scope dropdowns (All Levels, Current Unit, Mistakes Only, All Words), and animated hover micro-interactions in Practice Arena & Context Builder.",
   "changed_files": [
     "index.html",
+    "css/style.css",
     "js/app.js",
     "version.json"
   ],
-  "update_exe": false,
+  "update_exe": true,
   "files": [
     "index.html",
+    "css/style.css",
     "js/app.js",
     "version.json",
     "app.ico",
