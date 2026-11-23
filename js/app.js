@@ -2599,6 +2599,16 @@ function bindAllEvents() {
     else if (e.key === "1") rateFlashcard("hard");
     else if (e.key === "2") rateFlashcard("good");
     else if (e.key === "3") rateFlashcard("easy");
+    else if (e.key === "r" || e.key === "R") {
+      e.preventDefault();
+      const w = getActiveWords();
+      if (w[flashcardIndex]) playSpeech(w[flashcardIndex].word, 1.0);
+    }
+    else if (e.key === "s" || e.key === "S") {
+      e.preventDefault();
+      const w = getActiveWords();
+      if (w[flashcardIndex]) playSpeech(w[flashcardIndex].word, 0.6);
+    }
   });
 }
 
@@ -3091,6 +3101,23 @@ function initGuideEvents() {
 
   const btnGotIt = $("#btnGotItGuide");
   if (btnGotIt) btnGotIt.addEventListener("click", hideGuideModal);
+
+  const backdrop = $("#guideModalBackdrop");
+  if (backdrop) {
+    backdrop.addEventListener("click", (e) => {
+      if (e.target === backdrop) hideGuideModal();
+    });
+  }
+
+  // Close guide modal on Escape (Esc) key
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" || e.key === "Esc") {
+      const modal = $("#guideModalBackdrop");
+      if (modal && !modal.classList.contains("hidden")) {
+        hideGuideModal();
+      }
+    }
+  });
 }
 
 function shuffle(arr) {
