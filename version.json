@@ -1,8 +1,8 @@
-﻿{
-  "version": "1.4.2",
-  "build": 34,
+{
+  "version": "1.4.3",
+  "build": 35,
   "date": "2026-11-24",
-  "notes": "✨ VocabMaster v1.4.2: Seamless Arabic & English keyboard shortcuts (e.code), refined Mastery & Scope dropdowns (All Levels, Current Unit, Mistakes Only, All Words), and animated hover micro-interactions in Practice Arena & Context Builder.",
+  "notes": "✨ VocabMaster v1.4.3: Fixed unit persistence across restarts (Dual-Storage SQLite + Disk JSON), resolved dropdown text truncation (Yellow — Needs Focus), and enhanced GitHub auto-updater detection.",
   "changed_files": [
     "index.html",
     "css/style.css",
