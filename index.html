@@ -259,13 +259,9 @@
             <div class="card-body" id="cardBody">
               <!-- FRONT FACE -->
               <div class="card-face card-front" id="cardFront">
+                <div class="card-glare" id="cardGlareFront"></div>
                 <div class="card-face-header">
                   <span class="card-type" id="cardType">NOUN</span>
-                  <div class="card-face-actions">
-                    <span class="card-mastery-pill" id="cardMasteryBadge">0% Mastery</span>
-                    <button class="btn-speak" id="btnSpeakSlow" title="Slow Pronunciation (0.6x)">🐢</button>
-                    <button class="btn-speak" id="btnSpeak" title="Pronounce word">🔊</button>
-                  </div>
                 </div>
 
                 <div class="card-face-center">
@@ -281,12 +277,9 @@
 
               <!-- BACK FACE -->
               <div class="card-face card-back" id="cardBack">
+                <div class="card-glare" id="cardGlareBack"></div>
                 <div class="card-face-header">
                   <span class="card-word-small" id="cardWordSmall">—</span>
-                  <div class="card-face-actions">
-                    <button class="btn-speak purple" id="btnSpeakExample" title="Pronounce example sentence">💬</button>
-                    <button class="btn-speak purple" id="btnSpeakBack" title="Pronounce word">🔊</button>
-                  </div>
                 </div>
 
                 <div class="card-face-center">
@@ -300,6 +293,18 @@
                 <div class="card-face-footer centered">
                   <span class="lang-dir-label">Rate recall below (Keys: 1, 2, 3)</span>
                 </div>
+              </div>
+
+              <!-- DEDICATED 3D ACTION PLANES (Parent is cardBody -> Moves with it, elevated in 3D) -->
+              <div class="card-action-plane front-action-plane" id="frontActionPlane">
+                <span class="card-mastery-pill" id="cardMasteryBadge">0% Mastery</span>
+                <button class="btn-speak" id="btnSpeakSlow" title="Slow Pronunciation (0.6x)" onclick="playSpeechFromCard(event, 0.58)">🐢</button>
+                <button class="btn-speak" id="btnSpeak" title="Pronounce word" onclick="playSpeechFromCard(event, 1.0)">🔊</button>
+              </div>
+
+              <div class="card-action-plane back-action-plane" id="backActionPlane">
+                <button class="btn-speak purple" id="btnSpeakExample" title="Pronounce example sentence" onclick="playSpeechFromCard(event, 0.88, true)">💬</button>
+                <button class="btn-speak purple" id="btnSpeakBack" title="Pronounce word" onclick="playSpeechFromCard(event, 1.0)">🔊</button>
               </div>
             </div>
           </div>
@@ -728,16 +733,16 @@
 
             <div class="wordlist-controls">
               <input type="text" id="searchInput" class="input-field search" placeholder="🔍 Search words, meaning, type..." />
-              <select id="filterMastery" class="input-field filter-select-sm">
-                <option value="all">All Mastery Levels</option>
-                <option value="low">Needs Focus (&lt; 40%)</option>
-                <option value="mid">Learning (40% - 79%)</option>
-                <option value="high">Mastered (80%+)</option>
+              <select id="filterMastery" class="input-field filter-select-sm" data-color="all">
+                <option value="all">All Levels</option>
+                <option value="low">🟡 Yellow — Needs Focus</option>
+                <option value="mid">🔵 Blue — Learning</option>
+                <option value="high">🟢 Green — Mastered</option>
               </select>
-              <select id="listScopeFilter" class="input-field filter-select">
-                <option value="active">Active Unit Only</option>
-                <option value="mistakes">⚠️ Mistakes Deck Only</option>
-                <option value="all">All Units Combined</option>
+              <select id="listScopeFilter" class="input-field filter-select" data-scope="active">
+                <option value="active">📂 Current Unit</option>
+                <option value="mistakes">⚠️ Mistakes Only</option>
+                <option value="all">🌐 All Words</option>
               </select>
               <div class="view-toggle-group">
                 <button class="view-toggle-btn active" id="btnViewCards" title="Bento Cards View">⊞ Cards</button>
@@ -808,7 +813,7 @@
   <div class="modal-backdrop hidden" id="guideModalBackdrop">
     <div class="modal-dialog guide-dialog" role="dialog" aria-modal="true" aria-labelledby="guideModalTitle">
       <div class="modal-dialog-header">
-        <div class="dialog-title-group">
+        <div class="dialog-title-group" dir="rtl" style="text-align: right; width: 100%;">
           <div class="dialog-icon-bubble guide-bubble">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="10"></circle>
@@ -816,15 +821,15 @@
               <line x1="12" y1="17" x2="12.01" y2="17"></line>
             </svg>
           </div>
-          <div>
-            <h3 id="guideModalTitle" class="dialog-title">How to Use Me 💡 | دليل استخدام التطبيق</h3>
-            <p class="dialog-sub">أهلاً بيك يا غالي في VocabMaster، ده دليلك السريع والمباشر لكل زرار وميزة جوه البرنامج عشان تستفيد بأقصى طاقة من غير أي لخبطة.</p>
+          <div style="flex: 1;">
+            <h3 id="guideModalTitle" class="dialog-title">دليل استخدام التطبيق 💡 | Guide</h3>
+            <p class="dialog-sub">ده دليلك السريع لكل زرار وميزة جوه البرنامج عشان تشتغل بذكاء وسرعة ومن غير أي لخبطة أو تشتيت، وتطلع بأقصى استفادة من وقتك.</p>
           </div>
         </div>
         <button type="button" class="dialog-close-btn" id="btnCloseGuideModal" aria-label="Close">&times;</button>
       </div>
 
-      <div class="dialog-body guide-dialog-body">
+      <div class="dialog-body guide-dialog-body" dir="rtl">
         <div class="guide-grid">
           <!-- Item 1: Flashcards -->
           <div class="guide-card">
@@ -837,16 +842,39 @@
               </div>
               <div class="guide-card-title-wrap">
                 <h4>Flashcards</h4>
-                <span class="guide-ar-title">كروت الحفظ الذكية</span>
+                <span class="guide-ar-title">كروت الحفظ الذكية والتكرار المتباعد</span>
               </div>
               <span class="guide-tag">Study</span>
             </div>
             <p class="guide-card-desc">
-              دوس على الكارت أو اضغط Space عشان تقلبه وتشوف المعنى بالعربي والأمثلة، وبعدها قيّم نفسك بـ Hard أو Good أو Easy عشان يرفع نسبة إتقانك ويظبطلك ميعاد المراجعة صح.
+              دوس على الكارت أو اضغط Space عشان تقلبه وتشوف المعنى بالعربي ومثال السياق. قيّم نفسك بـ Hard عشان يعيدها ويركز عليها، أو Good للمستوى المتدرج، أو Easy عشان يرفع إتقانها +20% ويبرمج ميعاد مراجعتها تلقائياً بنظام التكرار المتباعد الذكي.
             </p>
           </div>
 
-          <!-- Item 2: Auto-Voice & Slow Voice -->
+          <!-- Item 2: Mastery Dots & Deck Queue -->
+          <div class="guide-card">
+            <div class="guide-card-header">
+              <div class="guide-icon-box emerald">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <circle cx="12" cy="12" r="4"></circle>
+                </svg>
+              </div>
+              <div class="guide-card-title-wrap">
+                <h4>Mastery Dots &amp; Queue</h4>
+                <span class="guide-ar-title">ألوان ونسب الإتقان (الأصفر والأزرق والأخضر)</span>
+              </div>
+              <span class="guide-tag">Progress</span>
+            </div>
+            <p class="guide-card-desc">
+              عاملينلك نظام ألوان زي إشارات المرور عشان تعرف وضع حفظك في لمح البصر:
+              <br>🟡 <b>النقطة الصفراء (أقل من 40%):</b> كلمة لسه جديدة أو تقيلة شوية، محتاجة تركيز ومراجعة أكثر.
+              <br>🔵 <b>النقطة الزرقاء السماوية (من 40% لـ 79%):</b> الكلمة دخلت في مرحلة التثبيت وبدأت تلقطها تمام.
+              <br>🟢 <b>النقطة الخضراء (80% فما فوق):</b> مبروك، الكلمة قفّلتها ودخلت في ذاكرتك طويلة المدى.
+            </p>
+          </div>
+
+          <!-- Item 3: Auto-Voice & Slow Voice -->
           <div class="guide-card">
             <div class="guide-card-header">
               <div class="guide-icon-box blue">
@@ -862,11 +890,11 @@
               <span class="guide-tag">Audio</span>
             </div>
             <p class="guide-card-desc">
-              أول ما الكلمة تظهر هينطقها لوحده بلكنة أمريكية واضحة، ولو في كلمة تقيلة ومحتاس فيها، دوس على النطق البطيء 0.6x عشان تلقط الحروف صح على مهلك.
+              أول ما الكلمة تظهر هينطقها لوحده بلكنة أمريكية واضحة، ولو في كلمة تقيلة ومحتاس فيها، دوس على زر السلحفاة 🐢 للنطق البطيء 0.6x عشان تلقط الحروف ومخارج الصوت صح على مهلك، أو زر السماعة 🔊 لإعادة النطق.
             </p>
           </div>
 
-          <!-- Item 3: Pocket Audio Loop -->
+          <!-- Item 4: Pocket Audio Loop -->
           <div class="guide-card">
             <div class="guide-card-header">
               <div class="guide-icon-box purple">
@@ -877,16 +905,16 @@
               </div>
               <div class="guide-card-title-wrap">
                 <h4>Pocket Audio Loop</h4>
-                <span class="guide-ar-title">المراجعة الصوتية في الجيب</span>
+                <span class="guide-ar-title">المراجعة الصوتية في الجيب بدون شاشة</span>
               </div>
               <span class="guide-tag">Hands-Free</span>
             </div>
             <p class="guide-card-desc">
-              شغّلها وسيب الموبايل أو الشاشة وراك؛ هيشغلك كلمات الوحدة بالترتيب وينطقها إنجليزي وبعدها عربي مع فترات راحة مريحة، جامدة جداً في المواصلات أو وقت التمرين.
+              شغّلها وسيب الموبايل أو الشاشة وراك؛ هيشغلك كلمات الوحدة بالترتيب وينطق الكلمة إنجليزي وبعدها عربي مع فترات راحة مريحة وتكرار مستمر، جامدة جداً في المواصلات أو وقت التمرين.
             </p>
           </div>
 
-          <!-- Item 4: Practice Arena -->
+          <!-- Item 5: Practice Arena -->
           <div class="guide-card">
             <div class="guide-card-header">
               <div class="guide-icon-box amber">
@@ -898,16 +926,16 @@
               </div>
               <div class="guide-card-title-wrap">
                 <h4>Practice Arena</h4>
-                <span class="guide-ar-title">حلبة الاختبارات والتمارين</span>
+                <span class="guide-ar-title">حلبة الاختبارات والتمارين العملية</span>
               </div>
               <span class="guide-tag">Testing</span>
             </div>
             <p class="guide-card-desc">
-              اختبر نفسك بـ 3 طرق مختلفة: اختيار من متعدد (Multiple Choice) عشان سرعة البديهة، وإملاء (Spelling Test) تكتب الكلمة من سمعك، وتوصيل (Match Game) تظبط الإنجليزي بالعربي في أسرع وقت.
+              اختبر نفسك بـ 3 طرق مختلفة: اختيار من متعدد (Multiple Choice) عشان سرعة البديهة، وإملاء (Spelling Test) تكتب الكلمة من سمعك لتثبيت الحروف، وتوصيل (Match Game) تظبط الإنجليزي بالعربي في أسرع وقت.
             </p>
           </div>
 
-          <!-- Item 5: Active Context Builder -->
+          <!-- Item 6: Active Context Builder -->
           <div class="guide-card">
             <div class="guide-card-header">
               <div class="guide-icon-box emerald">
@@ -926,7 +954,7 @@
             </p>
           </div>
 
-          <!-- Item 6: Word Manager & Bulk Import -->
+          <!-- Item 7: Word Manager & Bulk Import -->
           <div class="guide-card">
             <div class="guide-card-header">
               <div class="guide-icon-box cyan">
@@ -947,7 +975,7 @@
             </p>
           </div>
 
-          <!-- Item 7: Mistakes Deck -->
+          <!-- Item 8: Mistakes Deck -->
           <div class="guide-card">
             <div class="guide-card-header">
               <div class="guide-icon-box rose">
@@ -959,7 +987,7 @@
               </div>
               <div class="guide-card-title-wrap">
                 <h4>Mistakes Deck</h4>
-                <span class="guide-ar-title">صندوق الأخطاء والتحدي</span>
+                <span class="guide-ar-title">صندوق الأخطاء والتحدي الذكي</span>
               </div>
               <span class="guide-tag">Smart Deck</span>
             </div>
@@ -968,7 +996,7 @@
             </p>
           </div>
 
-          <!-- Item 8: Units & Sub-Parts -->
+          <!-- Item 9: Units & Sub-Parts -->
           <div class="guide-card">
             <div class="guide-card-header">
               <div class="guide-icon-box blue">
@@ -978,7 +1006,7 @@
               </div>
               <div class="guide-card-title-wrap">
                 <h4>Units &amp; Parts</h4>
-                <span class="guide-ar-title">الوحدات وتقسيم الأجزاء</span>
+                <span class="guide-ar-title">الوحدات وتقسيم الأجزاء المريحة</span>
               </div>
               <span class="guide-tag">Folders</span>
             </div>
@@ -987,7 +1015,7 @@
             </p>
           </div>
 
-          <!-- Item 9: Auto-Updater & Red Dot -->
+          <!-- Item 10: Auto-Updater & Red Dot -->
           <div class="guide-card">
             <div class="guide-card-header">
               <div class="guide-icon-box emerald">
@@ -997,7 +1025,7 @@
               </div>
               <div class="guide-card-title-wrap">
                 <h4>Auto-Updater &amp; Red Dot</h4>
-                <span class="guide-ar-title">التحديث التلقائي والنقطة الحمراء</span>
+                <span class="guide-ar-title">التحديث السحابي التلقائي الآمن</span>
               </div>
               <span class="guide-tag">Cloud</span>
             </div>
@@ -1006,7 +1034,7 @@
             </p>
           </div>
 
-          <!-- Item 10: Keyboard Shortcuts -->
+          <!-- Item 11: Keyboard Shortcuts -->
           <div class="guide-card">
             <div class="guide-card-header">
               <div class="guide-icon-box purple">
@@ -1021,12 +1049,12 @@
               </div>
               <div class="guide-card-title-wrap">
                 <h4>Keyboard Shortcuts</h4>
-                <span class="guide-ar-title">اختصارات لوحة المفاتيح</span>
+                <span class="guide-ar-title">اختصارات لوحة المفاتيح السريعة</span>
               </div>
               <span class="guide-tag">Speed</span>
             </div>
             <p class="guide-card-desc">
-              عشان إيدك تبقى سريعة: Space يقلب الكارت، و 1 / 2 / 3 للتقييم، والأسهم ← و → للتنقل، و R يعيد النطق، و S ينطقه بطيء.
+              عشان تذاكر بسرعة البرق: زر Space يقلب الكارت، و 1 / 2 / 3 لتقييم الذاكرة، والأسهم ← و → للتنقل، و R يعيد النطق الطبيعي، و S ينطق بطيء (0.6x)، وزر Esc لقفل أي نافذة.
             </p>
           </div>
         </div>
