@@ -52,10 +52,11 @@ const $$ = (sel) => document.querySelectorAll(sel);
 
 function loadState() {
   const raw = localStorage.getItem(STORAGE_KEY);
+  let loaded = false;
   if (raw) {
     try {
       const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === "object") {
+      if (parsed && typeof parsed === "object" && parsed.units && Object.keys(parsed.units).length > 0) {
         state.units = parsed.units && typeof parsed.units === "object" ? parsed.units : {};
         state.mistakes = parsed.mistakes && typeof parsed.mistakes === "object" ? parsed.mistakes : {};
         state.autoPlayAudio = parsed.autoPlayAudio !== undefined ? parsed.autoPlayAudio : true;
@@ -68,13 +69,41 @@ function loadState() {
         } else {
           state.activeUnitId = keys.length > 0 ? keys[0] : null;
         }
-        return;
+        loaded = true;
       }
     } catch (e) {
       console.error("Failed to parse V3 store:", e);
     }
   }
-  seedInitialState();
+
+  if (!loaded) {
+    seedInitialState();
+    hydrateFromDiskStore();
+  }
+}
+
+async function hydrateFromDiskStore() {
+  try {
+    const res = await fetch(`${UPDATER_BASE}/load-store`);
+    if (res.ok) {
+      const parsed = await res.json();
+      if (parsed && parsed.units && typeof parsed.units === "object" && Object.keys(parsed.units).length > 0) {
+        state.units = parsed.units;
+        state.mistakes = parsed.mistakes && typeof parsed.mistakes === "object" ? parsed.mistakes : {};
+        state.autoPlayAudio = parsed.autoPlayAudio !== undefined ? parsed.autoPlayAudio : true;
+        state.explorerView = parsed.explorerView === "table" ? "table" : "cards";
+        state.contextSentences = Array.isArray(parsed.contextSentences) ? parsed.contextSentences : [];
+        const keys = Object.keys(state.units);
+        state.activeUnitId = keys.length > 0 ? keys[0] : null;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        renderUnitsToolbar();
+        renderExplorer();
+        renderFlashcard();
+        updateHeaderStats();
+        console.log("Successfully hydrated state from disk fallback (vocab_store.json)!");
+      }
+    }
+  } catch (_) {}
 }
 
 function seedInitialState() {
@@ -86,12 +115,19 @@ function seedInitialState() {
     explorerView: "cards",
     contextSentences: []
   };
-  saveState();
 }
 
 function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   updateHeaderStats();
+  // Persistent disk backup via local C# API
+  try {
+    fetch(`${UPDATER_BASE}/save-store`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(state)
+    }).catch(() => {});
+  } catch (_) {}
 }
 
 // ────────────────────── QUERY HELPERS ──────────────────────
@@ -2713,8 +2749,8 @@ const GITHUB_REPO = "George-F-63S/vocabmaster";
 const GITHUB_RAW_BASE = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/`;
 const UPDATER_PORT = 49555;
 const UPDATER_BASE = `http://127.0.0.1:${UPDATER_PORT}/api`;
-let appCurrentVersion = "1.0.2";
-let appCurrentBuild = 3;
+let appCurrentVersion = "1.4.3";
+let appCurrentBuild = 35;
 
 function startUpdaterHeartbeat() {
   // Ping local C# launcher every 15 seconds to keep it informed the app is open
@@ -2910,6 +2946,10 @@ async function checkForUpdates(isManual = false) {
     setUpdateBadgeNotification(true, updateData);
     if (isManual) {
       showUpdateModal(updateData);
+    } else {
+      setTimeout(() => {
+        showUpdateModal(updateData);
+      }, 1000);
     }
   } else {
     setUpdateBadgeNotification(false);
