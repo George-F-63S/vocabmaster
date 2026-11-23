@@ -1010,7 +1010,11 @@ function renderFlashcard() {
   updateAutoAudioUI();
 
   isCardFlipped = false;
-  $("#cardBody").classList.remove("flipped");
+  const cardBody = $("#cardBody");
+  if (cardBody) {
+    cardBody.classList.remove("flipped");
+    cardBody.style.transform = "";
+  }
   $("#queueCountBadge").textContent = `${words.length} Words`;
 
   if (words.length === 0) {
@@ -1113,7 +1117,12 @@ function flipFlashcard() {
   const words = getActiveWords();
   if (words.length === 0) return;
   isCardFlipped = !isCardFlipped;
-  $("#cardBody").classList.toggle("flipped", isCardFlipped);
+  const cardBody = $("#cardBody");
+  if (cardBody) {
+    cardBody.style.transition = "transform 0.6s cubic-bezier(0.22, 1, 0.36, 1)";
+    cardBody.classList.toggle("flipped", isCardFlipped);
+    cardBody.style.transform = isCardFlipped ? "rotateY(180deg)" : "rotateY(0deg)";
+  }
   if (isCardFlipped && state.autoPlayAudio) {
     playSpeech(words[flashcardIndex].word);
   }
@@ -1200,14 +1209,22 @@ function runPocketLoopStep() {
   if (!words.length) return stopPocketLoop();
 
   isCardFlipped = false;
-  $("#cardBody").classList.remove("flipped");
+  const cb1 = $("#cardBody");
+  if (cb1) {
+    cb1.classList.remove("flipped");
+    cb1.style.transform = "rotateY(0deg)";
+  }
   const current = words[flashcardIndex];
   playSpeech(current.word, 0.9);
 
   pocketLoopTimer = setTimeout(() => {
     if (!pocketLoopActive) return;
     isCardFlipped = true;
-    $("#cardBody").classList.add("flipped");
+    const cb2 = $("#cardBody");
+    if (cb2) {
+      cb2.classList.add("flipped");
+      cb2.style.transform = "rotateY(180deg)";
+    }
     if (current.example) playSpeech(current.example, 0.9);
 
     pocketLoopTimer = setTimeout(() => {
@@ -2256,7 +2273,8 @@ function renderWordTable(list) {
 
   list.forEach((w, idx) => {
     const m = w.mastery || 0;
-    const mc = m < 40 ? "mastery-low" : m < 75 ? "mastery-mid" : "mastery-high";
+    const tier = m >= 80 ? "high" : m >= 40 ? "mid" : "low";
+    const mc = m < 40 ? "mastery-low" : m < 80 ? "mastery-mid" : "mastery-high";
     const isMistake = !!state.mistakes[w.id];
 
     const tr = document.createElement("tr");
@@ -2264,6 +2282,7 @@ function renderWordTable(list) {
     tr.innerHTML = `
       <td class="num-cell">${idx + 1}</td>
       <td class="word-cell">
+        <span class="queue-dot ${tier}" style="display:inline-block; vertical-align:middle; margin-right:8px; width:9px; height:9px; border-radius:50%;"></span>
         ${escapeHTML(w.word)}
         ${isMistake ? '<span class="needs-practice-badge">⚠️ Needs Practice</span>' : ""}
       </td>
@@ -2378,28 +2397,52 @@ function bindAllEvents() {
   $("#btnDeleteActiveUnit").addEventListener("click", deleteActiveUnit);
   $("#btnClearAllMistakes").addEventListener("click", clearAllMistakes);
 
-  // Flashcards studio
-  $("#cardScene").addEventListener("click", flipFlashcard);
-  $("#btnSpeak").addEventListener("click", (e) => {
-    e.stopPropagation();
-    const w = getActiveWords();
-    if (w[flashcardIndex]) playSpeech(w[flashcardIndex].word);
+  // Flashcards studio - only flip if clicking the card surface, NOT buttons or audio controls
+  $("#cardScene").addEventListener("click", (e) => {
+    if (e.target.closest("button") || e.target.closest(".btn-speak") || e.target.closest(".card-action-plane") || e.target.closest(".card-face-actions")) {
+      return;
+    }
+    flipFlashcard();
   });
-  $("#btnSpeakSlow").addEventListener("click", (e) => {
-    e.stopPropagation();
-    const w = getActiveWords();
-    if (w[flashcardIndex]) playSpeech(w[flashcardIndex].word, 0.58);
-  });
-  $("#btnSpeakExample").addEventListener("click", (e) => {
-    e.stopPropagation();
-    const w = getActiveWords();
-    if (w[flashcardIndex] && w[flashcardIndex].example) playSpeech(w[flashcardIndex].example, 0.88);
-  });
-  $("#btnSpeakBack").addEventListener("click", (e) => {
-    e.stopPropagation();
-    const w = getActiveWords();
-    if (w[flashcardIndex]) playSpeech(w[flashcardIndex].word);
-  });
+
+  window.playSpeechFromCard = function (e, rate = 1.0, isExample = false) {
+    if (e) {
+      if (typeof e.stopPropagation === "function") e.stopPropagation();
+      if (typeof e.stopImmediatePropagation === "function") e.stopImmediatePropagation();
+    }
+    const btn = e && e.currentTarget ? e.currentTarget : null;
+    if (btn) {
+      btn.style.transform = "scale(0.85)";
+      btn.style.borderColor = "#00d4ff";
+      btn.style.boxShadow = "0 0 16px rgba(0, 212, 255, 0.85)";
+      setTimeout(() => {
+        btn.style.transform = "";
+        btn.style.borderColor = "";
+        btn.style.boxShadow = "";
+      }, 180);
+    }
+    const words = getActiveWords();
+    if (!words || !words.length || !words[flashcardIndex]) return;
+    const current = words[flashcardIndex];
+    const text = isExample && current.example ? current.example : current.word;
+    playSpeech(text, rate);
+  };
+
+  const setupCardAudioBtn = (id, rateFn, isExample = false) => {
+    const el = $(id);
+    if (!el) return;
+    const play = (e) => {
+      window.playSpeechFromCard(e, typeof rateFn === "function" ? rateFn() : 1.0, isExample);
+    };
+    el.addEventListener("click", play);
+    el.addEventListener("pointerdown", (e) => e.stopPropagation());
+    el.addEventListener("mousedown", (e) => e.stopPropagation());
+  };
+
+  setupCardAudioBtn("#btnSpeak", () => 1.0);
+  setupCardAudioBtn("#btnSpeakSlow", () => 0.58);
+  setupCardAudioBtn("#btnSpeakExample", () => 0.88, true);
+  setupCardAudioBtn("#btnSpeakBack", () => 1.0);
   $("#btnAutoAudio").addEventListener("click", toggleAutoPlayAudio);
   $("#btnPocketLoop").addEventListener("click", togglePocketLoop);
 
@@ -2582,29 +2625,79 @@ function bindAllEvents() {
   $("#btnResetAllApp").addEventListener("click", resetAllData);
 
   // Explorer filters & view toggle
+  const filterMasteryEl = $("#filterMastery");
+  function syncFilterMasteryColor() {
+    if (!filterMasteryEl) return;
+    filterMasteryEl.setAttribute("data-color", filterMasteryEl.value);
+  }
+  if (filterMasteryEl) {
+    filterMasteryEl.addEventListener("change", () => {
+      syncFilterMasteryColor();
+      renderExplorer();
+    });
+    syncFilterMasteryColor();
+  }
+  const listScopeFilterEl = $("#listScopeFilter");
+  function syncListScopeFilterTheme() {
+    if (!listScopeFilterEl) return;
+    listScopeFilterEl.setAttribute("data-scope", listScopeFilterEl.value);
+  }
+  if (listScopeFilterEl) {
+    listScopeFilterEl.addEventListener("change", () => {
+      syncListScopeFilterTheme();
+      renderExplorer();
+    });
+    syncListScopeFilterTheme();
+  }
   $("#searchInput").addEventListener("input", renderExplorer);
-  $("#filterMastery").addEventListener("change", renderExplorer);
-  $("#listScopeFilter").addEventListener("change", renderExplorer);
   $("#btnViewCards").addEventListener("click", () => setExplorerView("cards"));
   $("#btnViewTable").addEventListener("click", () => setExplorerView("table"));
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts (Seamless English & Arabic support via physical e.code & Arabic fallbacks)
   document.addEventListener("keydown", (e) => {
-    if (["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName)) return;
+    if (["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName) || e.target.isContentEditable) return;
     if (currentMode !== "flashcards") return;
 
-    if (e.code === "Space") { e.preventDefault(); flipFlashcard(); }
-    else if (e.key === "ArrowRight") { e.preventDefault(); navigateCard(1); }
-    else if (e.key === "ArrowLeft") { e.preventDefault(); navigateCard(-1); }
-    else if (e.key === "1") rateFlashcard("hard");
-    else if (e.key === "2") rateFlashcard("good");
-    else if (e.key === "3") rateFlashcard("easy");
-    else if (e.key === "r" || e.key === "R") {
+    const code = e.code;
+    const key = e.key;
+
+    // Flip card (Space)
+    if (code === "Space" || key === " " || key === "Spacebar") {
+      e.preventDefault();
+      flipFlashcard();
+    }
+    // Navigate cards (Arrows)
+    else if (code === "ArrowRight" || key === "ArrowRight") {
+      e.preventDefault();
+      navigateCard(1);
+    }
+    else if (code === "ArrowLeft" || key === "ArrowLeft") {
+      e.preventDefault();
+      navigateCard(-1);
+    }
+    // Hard rating (1 / ١)
+    else if (code === "Digit1" || code === "Numpad1" || key === "1" || key === "١") {
+      e.preventDefault();
+      rateFlashcard("hard");
+    }
+    // Good rating (2 / ٢)
+    else if (code === "Digit2" || code === "Numpad2" || key === "2" || key === "٢") {
+      e.preventDefault();
+      rateFlashcard("good");
+    }
+    // Easy rating (3 / ٣)
+    else if (code === "Digit3" || code === "Numpad3" || key === "3" || key === "٣") {
+      e.preventDefault();
+      rateFlashcard("easy");
+    }
+    // Replay normal voice 1.0x (KeyR or r / R or ق)
+    else if (code === "KeyR" || key === "r" || key === "R" || key === "ق") {
       e.preventDefault();
       const w = getActiveWords();
       if (w[flashcardIndex]) playSpeech(w[flashcardIndex].word, 1.0);
     }
-    else if (e.key === "s" || e.key === "S") {
+    // Play slow voice 0.6x (KeyS or s / S or س)
+    else if (code === "KeyS" || key === "s" || key === "S" || key === "س") {
       e.preventDefault();
       const w = getActiveWords();
       if (w[flashcardIndex]) playSpeech(w[flashcardIndex].word, 0.6);
@@ -3111,7 +3204,7 @@ function initGuideEvents() {
 
   // Close guide modal on Escape (Esc) key
   window.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" || e.key === "Esc") {
+    if (e.key === "Escape" || e.key === "Esc" || e.code === "Escape") {
       const modal = $("#guideModalBackdrop");
       if (modal && !modal.classList.contains("hidden")) {
         hideGuideModal();
@@ -3146,11 +3239,200 @@ function toast(msg, type = "info") {
   setTimeout(() => el.remove(), 3000);
 }
 
+// ══════════════════════════════════════════════════════════════
+//  9. 3D TILT WITH GLARE & MAGNETIC HOVER MOTION
+// ══════════════════════════════════════════════════════════════
+
+function initCard3DTiltAndMagneticHover() {
+  const cardScene = $("#cardScene");
+  const cardBody = $("#cardBody");
+  const glareFront = $("#cardGlareFront");
+  const glareBack = $("#cardGlareBack");
+
+  if (cardScene && cardBody) {
+    let targetTiltX = 0;
+    let targetTiltY = 0;
+    let currentTiltX = 0;
+    let currentTiltY = 0;
+    let currentScale = 1;
+    let targetScale = 1;
+    let isHovering = false;
+    let tiltRafId = null;
+    const maxTilt = 4.0; // Smooth, gentle tilt angle
+
+    function animateTilt() {
+      const ease = isHovering ? 0.22 : 0.14;
+      currentTiltX += (targetTiltX - currentTiltX) * ease;
+      currentTiltY += (targetTiltY - currentTiltY) * ease;
+      currentScale += (targetScale - currentScale) * ease;
+
+      if (!isHovering && Math.abs(currentTiltX) < 0.05 && Math.abs(currentTiltY) < 0.05 && Math.abs(currentScale - 1) < 0.005) {
+        currentTiltX = 0;
+        currentTiltY = 0;
+        currentScale = 1;
+        cardBody.style.transform = isCardFlipped ? "rotateY(180deg)" : "rotateY(0deg)";
+        tiltRafId = null;
+        return;
+      }
+
+      const sScale = currentScale.toFixed(3);
+
+      // Flip Compatibility Math:
+      // When back face is facing user (isCardFlipped = true), rotateY(180 - currentTiltY) preserves natural cursor tilt
+      if (isCardFlipped) {
+        cardBody.style.transform = `rotateX(${currentTiltX.toFixed(2)}deg) rotateY(${(180 - currentTiltY).toFixed(2)}deg) scale3d(${sScale}, ${sScale}, 1)`;
+      } else {
+        cardBody.style.transform = `rotateX(${currentTiltX.toFixed(2)}deg) rotateY(${currentTiltY.toFixed(2)}deg) scale3d(${sScale}, ${sScale}, 1)`;
+      }
+
+      tiltRafId = requestAnimationFrame(animateTilt);
+    }
+
+    // Edge activation curve ("تبقا من عند الاطراف"):
+    // Inner 32% center zone stays completely flat and steady.
+    // Progressively tilts as cursor approaches the edges/perimeter.
+    function getEdgeResponse(normVal) {
+      const abs = Math.abs(normVal);
+      const sign = Math.sign(normVal);
+      const deadzone = 0.32;
+      if (abs <= deadzone) return 0;
+      const t = (abs - deadzone) / (1 - deadzone);
+      return sign * (t * t); // Smooth quadratic curve towards edges
+    }
+
+    cardScene.addEventListener("mousemove", (e) => {
+      const rect = cardScene.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      const normX = (mouseX / rect.width) * 2 - 1; // -1 to +1
+      const normY = (mouseY / rect.height) * 2 - 1; // -1 to +1
+
+      // Edge-based activation
+      const edgeX = getEdgeResponse(normX);
+      const edgeY = getEdgeResponse(normY);
+
+      targetTiltX = -edgeY * maxTilt;
+      targetTiltY = edgeX * maxTilt;
+      targetScale = 1.015;
+
+      const glarePercentX = Math.max(0, Math.min(100, (mouseX / rect.width) * 100));
+      const glarePercentY = Math.max(0, Math.min(100, (mouseY / rect.height) * 100));
+
+      if (glareFront) {
+        glareFront.style.setProperty("--glare-x", `${glarePercentX.toFixed(1)}%`);
+        glareFront.style.setProperty("--glare-y", `${glarePercentY.toFixed(1)}%`);
+      }
+      if (glareBack) {
+        glareBack.style.setProperty("--glare-x", `${(100 - glarePercentX).toFixed(1)}%`);
+        glareBack.style.setProperty("--glare-y", `${glarePercentY.toFixed(1)}%`);
+      }
+
+      if (!isHovering) {
+        isHovering = true;
+        cardBody.style.transition = "none";
+        if (!tiltRafId) tiltRafId = requestAnimationFrame(animateTilt);
+      }
+    });
+
+    cardScene.addEventListener("mouseleave", () => {
+      isHovering = false;
+      targetTiltX = 0;
+      targetTiltY = 0;
+      targetScale = 1;
+      cardBody.style.transition = "transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.5s ease";
+      if (!tiltRafId) tiltRafId = requestAnimationFrame(animateTilt);
+    });
+
+    cardScene.addEventListener("mouseenter", () => {
+      isHovering = true;
+      cardBody.style.transition = "none";
+      targetScale = 1.035;
+      if (!tiltRafId) tiltRafId = requestAnimationFrame(animateTilt);
+    });
+  }
+
+  // Subtle magnetic cursor pull for key interactive buttons outside the card
+  const magneticSelectors = [
+    "#btnHard",
+    "#btnGood",
+    "#btnEasy",
+    "#btnPocketLoop",
+    "#btnAutoAudio",
+    "#btnPrev",
+    "#btnNext",
+    "#btnAddPartToUnit",
+    "#btnRenameActiveUnit",
+    "#btnClearActiveUnitWords",
+    "#btnDeleteActiveUnit"
+  ];
+
+  magneticSelectors.forEach((sel) => {
+    const btn = $(sel);
+    if (!btn) return;
+
+    btn.classList.add("magnetic-btn");
+    let magRaf = null;
+    let targetX = 0;
+    let targetY = 0;
+    let curX = 0;
+    let curY = 0;
+    let isHovered = false;
+    const maxPull = 5; // max 5px pull
+
+    function updateMag() {
+      const damping = isHovered ? 0.25 : 0.2;
+      curX += (targetX - curX) * damping;
+      curY += (targetY - curY) * damping;
+
+      if (!isHovered && Math.abs(curX) < 0.08 && Math.abs(curY) < 0.08) {
+        curX = 0;
+        curY = 0;
+        btn.style.transform = "";
+        magRaf = null;
+        return;
+      }
+
+      btn.style.transform = `translate3d(${curX.toFixed(2)}px, ${curY.toFixed(2)}px, 0)`;
+      magRaf = requestAnimationFrame(updateMag);
+    }
+
+    btn.addEventListener("mousemove", (e) => {
+      const rect = btn.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+
+      const relX = Math.max(-1, Math.min(1, (e.clientX - centerX) / (rect.width / 2)));
+      const relY = Math.max(-1, Math.min(1, (e.clientY - centerY) / (rect.height / 2)));
+
+      targetX = relX * maxPull;
+      targetY = relY * maxPull;
+
+      if (!isHovered) {
+        isHovered = true;
+        if (!magRaf) magRaf = requestAnimationFrame(updateMag);
+      }
+    });
+
+    btn.addEventListener("mouseleave", () => {
+      isHovered = false;
+      targetX = 0;
+      targetY = 0;
+      if (!magRaf) magRaf = requestAnimationFrame(updateMag);
+    });
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   loadState();
   bindAllEvents();
   initUpdaterEvents();
   initGuideEvents();
+  initCard3DTiltAndMagneticHover();
   startUpdaterHeartbeat();
   fetchCurrentVersion();
   renderUnitsToolbar();
