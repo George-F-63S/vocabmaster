@@ -1,13 +1,12 @@
 {
-  "version": "1.4.8",
-  "build": 40,
+  "version": "1.4.9",
+  "build": 41,
   "date": "2026-11-24",
-  "notes": "✨ VocabMaster v1.4.8: Upgraded Audio Spelling with the exact 3D metallic glass speaker asset, removed microphone icon from input, and enhanced soundwave acoustics.",
+  "notes": "✨ VocabMaster v1.4.9: Lifted 3D speaker position and upgraded acoustic waves with infinite smooth gradient-faded concentric ellipses without cut-off edges.",
   "changed_files": [
     "index.html",
     "css/style.css",
-    "version.json",
-    "assets/icons/speaker-3d.png"
+    "version.json"
   ],
   "update_exe": true,
   "files": [
