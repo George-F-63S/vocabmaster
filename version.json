@@ -1,8 +1,8 @@
 {
-  "version": "1.4.6",
-  "build": 38,
+  "version": "1.4.7",
+  "build": 39,
   "date": "2026-11-24",
-  "notes": "✨ VocabMaster v1.4.6: Added cyber-neon notched card borders with floating glowing dots that transition from neon cyan to emerald green when typed in sentences.",
+  "notes": "✨ VocabMaster v1.4.7: Modern Cyber-Acoustic 3D Audio Spelling Studio with radiating soundwaves, metallic 3D speaker, live streak & accuracy badges, and Arabic shortcut support.",
   "changed_files": [
     "index.html",
     "css/style.css",
