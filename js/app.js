@@ -2749,8 +2749,8 @@ const GITHUB_REPO = "George-F-63S/vocabmaster";
 const GITHUB_RAW_BASE = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/`;
 const UPDATER_PORT = 49555;
 const UPDATER_BASE = `http://127.0.0.1:${UPDATER_PORT}/api`;
-let appCurrentVersion = "1.4.3";
-let appCurrentBuild = 35;
+let appCurrentVersion = "1.4.4";
+let appCurrentBuild = 36;
 
 function startUpdaterHeartbeat() {
   // Ping local C# launcher every 15 seconds to keep it informed the app is open
