@@ -7593,5 +7593,132 @@ body.lights-out .cyber-lamp-fixture:hover .lamp-bulb {
   }
 }
 
+/* ══════════════════════════════════════════════════════════════════════
+   MOBILE 60/120FPS GPU TURBO OPTIMIZATION LAYER
+   Eliminates backdrop-filter blur thrashing, fixed-bg repaints & heavy shadows
+   ══════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px), (hover: none) and (pointer: coarse) {
+  html {
+    scroll-behavior: auto !important;
+  }
+
+  body {
+    background-attachment: scroll !important;
+    background-image:
+      radial-gradient(at 0% 0%, rgba(0, 240, 255, 0.14) 0px, transparent 55%),
+      radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.14) 0px, transparent 55%) !important;
+    overscroll-behavior-y: contain;
+  }
+
+  /* Kill expensive real-time backdrop-filter blur passes on mobile GPUs */
+  *,
+  *::before,
+  *::after {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  /* Remove 300ms tap delay across all interactive controls */
+  button,
+  a,
+  [role="button"],
+  .sidebar-item,
+  .mobile-nav-btn,
+  .rate-btn,
+  .match-tile,
+  .mcq-option-btn,
+  .queue-item,
+  .card-scene {
+    touch-action: manipulation;
+  }
+
+  /* Compensate with rich obsidian surfaces so visual aesthetics stay crisp */
+  .app-header {
+    background: rgba(8, 13, 26, 0.98) !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45) !important;
+  }
+
+  .app-sidebar {
+    background: #060b1a !important;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.7) !important;
+    transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1) !important;
+    will-change: transform;
+  }
+
+  .sidebar-backdrop {
+    background: rgba(2, 6, 23, 0.78) !important;
+  }
+
+  .mobile-bottom-nav {
+    background: rgba(5, 10, 24, 0.98) !important;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.55) !important;
+  }
+
+  .quiz-stage-card,
+  .context-stage-card,
+  .manage-card,
+  .manage-card.studio-card,
+  .deck-queue-panel,
+  .data-settings-popover,
+  .modal-dialog {
+    background: rgba(11, 18, 36, 0.96) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+  }
+
+  .modal-backdrop {
+    background: rgba(4, 7, 14, 0.88) !important;
+  }
+
+  /* Flatten inner 3D layers & remove glare/filter passes for buttery 60fps card flip */
+  .card-body {
+    transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1) !important;
+  }
+
+  .card-glare,
+  .card-front::before {
+    display: none !important;
+  }
+
+  .card-face {
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55) !important;
+  }
+
+  .card-face > *,
+  .card-word,
+  .badge-pos,
+  .card-audio-btn,
+  .card-meaning,
+  .card-example-box {
+    transform: none !important;
+    transform-style: flat !important;
+  }
+
+  /* Remove GPU-heavy SVG drop-shadows & Gaussian blur filters on mobile */
+  .sidebar-item .nav-icon svg,
+  .cyber-lamp-fixture,
+  .wave-arc,
+  .speaker-3d-img,
+  .lamp-glow-aura,
+  .mistakes-banner-icon {
+    filter: none !important;
+  }
+
+  /* Disable hover lift/zoom jitter on touch scrolling lists */
+  .bento-word-card,
+  .queue-item,
+  .match-tile {
+    contain: content;
+    transition: background 0.15s ease, border-color 0.15s ease !important;
+  }
+
+  .bento-word-card:hover,
+  .manage-card:hover {
+    transform: none !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45) !important;
+  }
+}
+
+
 
 
