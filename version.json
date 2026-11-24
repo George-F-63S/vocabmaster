@@ -1,11 +1,12 @@
 {
-  "version": "1.4.9",
-  "build": 41,
+  "version": "1.4.10",
+  "build": 42,
   "date": "2026-11-24",
-  "notes": "✨ VocabMaster v1.4.9: Lifted 3D speaker position and upgraded acoustic waves with infinite smooth gradient-faded concentric ellipses without cut-off edges.",
+  "notes": "✨ VocabMaster v1.4.10: Reverted to the exact soundwave arcs with speaker dome perfectly centered, and enabled full dash indicator for all words in the active part.",
   "changed_files": [
     "index.html",
     "css/style.css",
+    "js/app.js",
     "version.json"
   ],
   "update_exe": true,
