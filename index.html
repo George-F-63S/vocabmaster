@@ -464,13 +464,16 @@
     <!-- ─────── VIEW 3: ACTIVE CONTEXT BUILDER (SIGNATURE FEATURE) ─────── -->
     <section class="mode-panel" id="contextPanel">
       <div class="quiz-stage-card context-stage-card">
-        <div class="quiz-arena-header">
+        <div class="quiz-arena-header context-arena-header">
           <div class="arena-left">
-            <span class="arena-deck-pill">✨ Active Context Builder</span>
-            <span class="arena-progress-label" id="contextStatusLabel">0 / 3 Words Used</span>
+            <span class="arena-deck-pill context-title-pill">🛡️ Active Context Builder</span>
           </div>
           <div class="arena-right">
-            <button class="btn-small" id="btnRollContextWords">🔄 New 3 Words</button>
+            <div class="context-counter-badge" id="contextCounterBadge">
+              <span class="counter-circle" id="contextCountCircle">0</span>
+              <span class="counter-text" id="contextStatusLabel">/ 3 Words Connected</span>
+            </div>
+            <button class="btn-small btn-roll-context" id="btnRollContextWords" title="Get another 3 random words">🔄 New 3 Words</button>
           </div>
         </div>
 
@@ -478,15 +481,23 @@
           Turn passive memorization into active fluency: write <b>one English sentence or mini-story</b> connecting all 3 words below from your active deck. Each word lights up emerald as you use it!
         </p>
 
+        <!-- 3 Smart Word Cards (Glassmorphism & Neon Glow) -->
         <div class="context-chips-row" id="contextChipsRow">
-          <!-- 3 Target Word Chips -->
+          <!-- 3 Target Word Cards dynamically injected -->
         </div>
 
-        <textarea id="contextSentenceInput" class="control-textarea context-textarea" placeholder="Write your English sentence connecting the 3 words above..."></textarea>
+        <!-- Interactive Sentence Editor with Gradient Border & Live Keyword Highlighting -->
+        <div class="context-editor-section">
+          <div class="editor-header-label">Sentence Textarea</div>
+          <div class="context-editor-wrapper">
+            <div class="context-editor-backdrop" id="contextHighlightBackdrop" aria-hidden="true"></div>
+            <textarea id="contextSentenceInput" class="context-editor-textarea" placeholder="Write your English sentence connecting the 3 words above..." spellcheck="false" autocomplete="off"></textarea>
+          </div>
+        </div>
 
         <div class="context-actions-bar">
-          <button type="button" class="btn-gradient-primary" id="btnSaveContextSentence">
-            <span>✨ Save Sentence &amp; Boost Mastery (+15%)</span>
+          <button type="button" class="btn-gradient-primary btn-boost-mastery" id="btnSaveContextSentence">
+            <span>⚡ Connect Context &amp; Boost Mastery (+15% XP)</span>
           </button>
         </div>
 
