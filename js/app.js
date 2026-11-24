@@ -1113,6 +1113,7 @@ function renderDeckQueue(words) {
     return;
   }
 
+  const frag = document.createDocumentFragment();
   words.forEach((w, idx) => {
     const m = w.mastery || 0;
     const dotClass = m >= 80 ? "high" : m >= 40 ? "mid" : "low";
@@ -1145,11 +1146,12 @@ function renderDeckQueue(words) {
       playSpeech(w.word);
     });
 
-    container.appendChild(item);
+    frag.appendChild(item);
   });
 
+  container.appendChild(frag);
   const activeEl = container.querySelector(".queue-item.active");
-  if (activeEl) activeEl.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  if (activeEl) activeEl.scrollIntoView({ block: "nearest", behavior: "auto" });
 }
 
 function flipFlashcard() {
@@ -2584,6 +2586,7 @@ function renderExplorer() {
 function renderBentoGrid(list) {
   const grid = $("#wordCardsGrid");
   grid.innerHTML = "";
+  const frag = document.createDocumentFragment();
 
   list.forEach((w) => {
     const m = w.mastery || 0;
@@ -2625,13 +2628,16 @@ function renderBentoGrid(list) {
     card.querySelector(".btn-speak").addEventListener("click", () => playSpeech(w.word));
     card.querySelector(".btn-mistake-toggle").addEventListener("click", () => toggleManualMistake(w.id));
     card.querySelector(".btn-delete-word").addEventListener("click", () => deleteWord(w.id, w._unitId));
-    grid.appendChild(card);
+    frag.appendChild(card);
   });
+
+  grid.appendChild(frag);
 }
 
 function renderWordTable(list) {
   const tbody = $("#wordlistBody");
   tbody.innerHTML = "";
+  const frag = document.createDocumentFragment();
 
   list.forEach((w, idx) => {
     const m = w.mastery || 0;
@@ -2660,8 +2666,10 @@ function renderWordTable(list) {
       </td>
     `;
     tr.querySelector(".btn-delete-word").addEventListener("click", () => deleteWord(w.id, w._unitId));
-    tbody.appendChild(tr);
+    frag.appendChild(tr);
   });
+
+  tbody.appendChild(frag);
 }
 
 // ════════════════════════════════════════════════════
