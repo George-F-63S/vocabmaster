@@ -5,7 +5,7 @@ The Ultimate English Vocabulary Learning & Spaced Repetition Platform for Window
 ## 📥 Download & Installation
 
 ### ⭐️ Recommended: Clean Portable Package (Zero Antivirus Warnings)
-👉 **[Download VocabMaster-v1.2.5-Windows.zip](https://github.com/George-F-63S/vocabmaster/releases/download/v1.2.5/VocabMaster-v1.2.5-Windows.zip)**
+👉 **[Download VocabMaster-v1.5.1-Windows.zip](https://github.com/George-F-63S/vocabmaster/releases/download/v1.5.1/VocabMaster-v1.5.1-Windows.zip)**
 
 1. Download the ZIP package above.
 2. Extract the folder anywhere on your PC (e.g. Desktop or Documents).
