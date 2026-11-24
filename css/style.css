@@ -4566,12 +4566,14 @@ select.input-field option { background: var(--bg-secondary); color: #fff; }
 }
 
 .context-word-chip {
-  min-height: 98px;
+  --neon-color: #00e5ff;
+  --neon-glow: rgba(0, 229, 255, 0.4);
+  min-height: 100px;
   padding: 16px 14px;
-  border-radius: 14px;
+  border-radius: 16px;
   background: rgba(11, 20, 38, 0.85);
-  border: 1.5px solid rgba(6, 182, 212, 0.55);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35), 0 0 16px rgba(6, 182, 212, 0.12);
+  border: 1.5px solid var(--neon-color);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45), 0 0 16px var(--neon-glow);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -4585,19 +4587,97 @@ select.input-field option { background: var(--bg-secondary); color: #fff; }
 
 .context-word-chip:hover {
   transform: translateY(-4px) scale(1.025);
-  border-color: rgba(6, 182, 212, 0.85);
-  box-shadow: 0 8px 25px rgba(6, 182, 212, 0.25);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.55), 0 0 24px var(--neon-color);
 }
 
 .context-word-chip.matched {
+  --neon-color: #10b981 !important;
+  --neon-glow: rgba(16, 185, 129, 0.45) !important;
   background: rgba(6, 78, 59, 0.28) !important;
-  border: 2px solid #10b981 !important;
-  box-shadow: 0 0 26px rgba(16, 185, 129, 0.38), inset 0 0 16px rgba(16, 185, 129, 0.1) !important;
+  border-width: 2px !important;
+  box-shadow: 0 0 28px rgba(16, 185, 129, 0.45), inset 0 0 18px rgba(16, 185, 129, 0.12) !important;
 }
 
 .context-word-chip.matched:hover {
   transform: translateY(-4px) scale(1.025);
-  box-shadow: 0 10px 32px rgba(16, 185, 129, 0.48), inset 0 0 18px rgba(16, 185, 129, 0.14) !important;
+  box-shadow: 0 0 36px rgba(16, 185, 129, 0.58), inset 0 0 20px rgba(16, 185, 129, 0.18) !important;
+}
+
+/* Cyber notch cutouts with glowing dots */
+.cyber-notch {
+  position: absolute;
+  height: 6px;
+  background: #080e1c;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.cyber-notch.top-notch {
+  top: -3px;
+  right: 24px;
+  width: 32px;
+}
+
+.cyber-notch.top-notch::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 4px;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--neon-color);
+  box-shadow: 0 0 8px var(--neon-color);
+  transition: all 0.25s ease;
+}
+
+.cyber-notch.top-notch::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--neon-color);
+  box-shadow: 0 0 10px var(--neon-color);
+  transition: all 0.25s ease;
+}
+
+.cyber-notch.bottom-notch {
+  bottom: -3px;
+  left: 24px;
+  width: 32px;
+}
+
+.cyber-notch.bottom-notch::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 4px;
+  transform: translateY(-50%);
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--neon-color);
+  box-shadow: 0 0 10px var(--neon-color);
+  transition: all 0.25s ease;
+}
+
+.cyber-notch.bottom-notch::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--neon-color);
+  box-shadow: 0 0 8px var(--neon-color);
+  transition: all 0.25s ease;
 }
 
 .card-check-badge {
@@ -4616,6 +4696,7 @@ select.input-field option { background: var(--bg-secondary); color: #fff; }
   font-weight: 900;
   box-shadow: 0 0 12px rgba(16, 185, 129, 0.8);
   animation: popCheckBadge 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 4;
 }
 
 @keyframes popCheckBadge {
