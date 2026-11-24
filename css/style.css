@@ -6882,13 +6882,716 @@ body.lights-out .cyber-lamp-fixture:hover .lamp-bulb {
   box-shadow: 0 0 12px rgba(0, 240, 255, 0.5) !important;
 }
 
+/* ══════════════════════════════════════════════════════════════════════
+   PWA INSTALL BUTTON & MOBILE BOTTOM NAVIGATION BAR
+   ══════════════════════════════════════════════════════════════════════ */
+
+.sidebar-pwa-install-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 12px;
+  margin-bottom: 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 240, 255, 0.45);
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.16), rgba(168, 85, 247, 0.16));
+  color: #e0faff;
+  font-family: var(--font-main);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 0 16px rgba(0, 240, 255, 0.18);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.sidebar-pwa-install-btn:hover {
+  transform: translateY(-1px);
+  border-color: #00f0ff;
+  box-shadow: 0 0 22px rgba(0, 240, 255, 0.35);
+}
+
+.sidebar-pwa-install-btn.hidden {
+  display: none !important;
+}
+
+.app-sidebar.collapsed .sidebar-pwa-install-btn .nav-label {
+  display: none;
+}
+
+.mobile-bottom-nav {
+  display: none;
+}
+
+/* Generous invisible touch hit target for the hanging neon lamp */
+.cyber-lamp-fixture::after {
+  content: "";
+  position: absolute;
+  inset: -6px -14px -16px -14px;
+  pointer-events: auto;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   MOBILE PWA RESPONSIVE UX / UI (iOS & ANDROID PORTRAIT/LANDSCAPE)
+   ══════════════════════════════════════════════════════════════════════ */
+
 @media (max-width: 768px) {
-  .app-header {
-    padding-right: 72px !important;
+  html,
+  body {
+    max-width: 100%;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
   }
+
+  /* Prevent iOS Safari auto-zoom on form input focus */
+  input,
+  textarea,
+  select,
+  .input-field,
+  .control-input,
+  .control-select,
+  .control-textarea,
+  .spelling-translucent-input,
+  .translate-translucent-input,
+  .context-editor-textarea {
+    font-size: 16px !important;
+  }
+
+  /* Slide-out Drawer Adaptation (Always interactive even in Lights Out) */
+  .sidebar-backdrop {
+    z-index: 1150 !important;
+  }
+
+  .app-sidebar,
+  .app-sidebar.collapsed {
+    position: fixed !important;
+    left: 0;
+    top: 0;
+    width: min(286px, 84vw) !important;
+    height: 100dvh !important;
+    z-index: 1200 !important;
+    transform: translateX(-105%);
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    overflow: hidden !important;
+  }
+
+  .app-sidebar.collapsed .brand-text-wrap,
+  .app-sidebar.collapsed .sidebar-section-label,
+  .app-sidebar.collapsed .sidebar-item .nav-label,
+  .app-sidebar.collapsed .sidebar-pwa-install-btn .nav-label {
+    display: block !important;
+  }
+
+  .app-sidebar.collapsed .sidebar-brand {
+    flex-direction: row !important;
+    padding: 15px 14px 13px !important;
+    justify-content: space-between !important;
+  }
+
+  .app-sidebar.collapsed .sidebar-brand-left {
+    flex: 1 !important;
+    justify-content: flex-start !important;
+  }
+
+  .app-sidebar.mobile-open {
+    transform: translateX(0) !important;
+  }
+
+  .sidebar-toggle-btn {
+    display: none !important;
+  }
+
+  .mobile-sidebar-btn {
+    display: flex !important;
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+  }
+
+  /* Sleek Obsidian Glass Mobile Bottom Navigation Bar */
+  .mobile-bottom-nav {
+    display: flex !important;
+    align-items: stretch;
+    justify-content: space-around;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1100;
+    background: rgba(5, 10, 24, 0.94);
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+    border-top: 1px solid rgba(0, 240, 255, 0.25);
+    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.65);
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+    gap: 4px;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
+  .mobile-nav-btn {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 6px 2px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    background: transparent;
+    color: #94a3b8;
+    font-family: var(--font-main);
+    cursor: pointer;
+    position: relative;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+  }
+
+  .mobile-nav-btn:active {
+    transform: scale(0.94);
+  }
+
+  .mobile-nav-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+  }
+
+  .mobile-nav-label {
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  .mobile-nav-btn.active {
+    color: #ffffff;
+    background: linear-gradient(180deg, rgba(0, 240, 255, 0.18), rgba(59, 130, 246, 0.1));
+    border-color: rgba(0, 240, 255, 0.45);
+    box-shadow: 0 0 14px rgba(0, 240, 255, 0.22);
+  }
+
+  .mobile-nav-btn.active::before {
+    content: "";
+    position: absolute;
+    top: -1px;
+    left: 22%;
+    right: 22%;
+    height: 2px;
+    border-radius: 99px;
+    background: #00f0ff;
+    box-shadow: 0 0 8px #00f0ff;
+  }
+
+  /* Compact Sticky Mobile Header & Lamp Clearance */
+  .app-shell {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  .app-header {
+    padding: calc(10px + env(safe-area-inset-top, 0px)) 68px 10px 12px !important;
+    min-height: 58px;
+    gap: 8px;
+  }
+
+  .header-left-group {
+    width: 100%;
+    gap: 8px;
+  }
+
+  .header-active-title {
+    font-size: 0.96rem;
+    max-width: 165px;
+  }
+
+  .units-actions-side {
+    width: 100%;
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 6px;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .units-actions-side::-webkit-scrollbar {
+    display: none;
+  }
+
+  .btn-tool {
+    padding: 5px 10px;
+    font-size: 0.72rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .header-stats {
+    width: 100%;
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 6px;
+    justify-content: flex-start;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+
+  .header-stats::-webkit-scrollbar {
+    display: none;
+  }
+
+  .stat-badge {
+    padding: 4px 10px;
+    flex-shrink: 0;
+  }
+
+  .stat-label {
+    font-size: 0.6rem;
+  }
+
+  .stat-value {
+    font-size: 0.82rem;
+  }
+
+  .btn-guide-header {
+    padding: 6px 10px;
+    font-size: 0.74rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .unit-parts-bar {
+    padding: 8px 12px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+  }
+
+  .unit-parts-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .part-pill {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Hanging Cyberpunk Lamp Sized for Mobile Notch / Top-Right */
   .cyber-lamp-fixture {
-    right: 18px !important;
+    top: env(safe-area-inset-top, 0px);
+    right: 14px !important;
+    touch-action: none;
+  }
+
+  .lamp-cord {
+    height: 32px;
+  }
+
+  .lamp-shade {
+    width: 40px;
+    height: 22px;
+  }
+
+  .lamp-bulb {
+    width: 12px;
+    height: 12px;
+    bottom: -6px;
+  }
+
+  .lamp-glow-aura {
+    width: 96px;
+    height: 96px;
+    bottom: -44px;
+  }
+
+  /* Main Content Area Safe Clearance Above Bottom Nav */
+  .app-main {
+    padding: 14px 12px calc(86px + env(safe-area-inset-bottom, 0px)) !important;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /* Flashcards Studio Mobile */
+  .studio-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .studio-top-controls {
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .studio-badges,
+  .studio-toggles {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .btn-control {
+    padding: 6px 10px;
+    font-size: 0.74rem;
+  }
+
+  .progress-section {
+    margin-bottom: 12px;
+    gap: 8px;
+  }
+
+  .card-scene {
+    height: 285px;
+    touch-action: pan-y;
+  }
+
+  .card-face {
+    padding: 18px 16px;
+    border-radius: 18px;
+  }
+
+  .card-word {
+    font-size: clamp(1.6rem, 7.2vw, 2.25rem);
+  }
+
+  .card-meaning {
+    font-size: clamp(1.4rem, 6.2vw, 1.95rem);
+    margin-bottom: 10px;
+  }
+
+  .card-example {
+    padding: 10px 12px;
+    max-height: 105px;
+    overflow-y: auto;
+  }
+
+  .card-hint {
+    display: none;
+  }
+
+  .studio-bottom-bar {
+    margin-top: 14px;
+    gap: 8px;
+  }
+
+  .nav-arrow {
+    width: 40px;
+    height: 40px;
+  }
+
+  .rating-buttons {
+    gap: 6px;
+  }
+
+  .rate-btn {
+    height: 44px;
+    padding: 0 8px;
+    border-radius: 12px;
+    gap: 5px;
+  }
+
+  .rate-key {
+    display: none;
+  }
+
+  .rate-title {
+    font-size: 0.8rem;
+  }
+
+  .deck-queue-panel {
+    height: 250px;
+    border-radius: 18px;
+  }
+
+  /* Practice Arena (All 4 Modes) Mobile */
+  .quiz-type-selector {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .quiz-type-btn {
+    padding: 10px 8px;
+    font-size: 0.76rem;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  #quizPanel .quiz-stage-card {
+    min-height: 370px;
+    padding: 16px 14px 20px;
+    border-radius: 18px;
+  }
+
+  .mcq-header-bar,
+  .match-header-bar,
+  .spelling-header-bar,
+  .translate-header-bar {
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 36px;
+    padding-bottom: 10px;
+    margin-bottom: 14px;
+  }
+
+  .spelling-dot-track {
+    max-width: 110px;
+    overflow: hidden;
+  }
+
+  .spelling-dot {
+    width: 8px;
+    height: 5px;
+  }
+
+  .spelling-dot.active {
+    width: 13px;
+  }
+
+  .spelling-speaker-stage,
+  .soundwave-svg {
+    width: 260px;
+    height: 155px;
+  }
+
+  .speaker-3d-btn {
+    transform: translateY(-16px);
+  }
+
+  .speaker-3d-btn:hover {
+    transform: translateY(-16px) scale(1.04);
+  }
+
+  .speaker-3d-img {
+    width: 116px;
+    height: 116px;
+  }
+
+  .spelling-shortcut-hints {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .spelling-meaning-pill {
+    padding: 7px 16px;
+    font-size: 1rem;
+    margin-bottom: 16px;
+    max-width: 100%;
+  }
+
+  .spelling-input-wrap,
+  .translate-input-wrap {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .btn-spelling-submit,
+  .btn-translate-submit {
+    width: 100%;
+    min-height: 46px;
+    padding: 12px 18px !important;
+  }
+
+  .translate-hero-portal {
+    padding: 16px 14px;
+    border-radius: 16px;
+    margin-bottom: 14px;
+  }
+
+  .translate-arabic-word {
+    font-size: clamp(1.5rem, 6.5vw, 2.1rem);
+  }
+
+  .translate-hint-stage {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .mcq-options {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .mcq-option-btn {
+    min-height: 48px;
+    padding: 12px 14px;
+  }
+
+  .match-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 8px;
+  }
+
+  .match-tile {
+    min-height: 58px;
+    padding: 8px 6px;
+    font-size: 0.8rem;
+    border-radius: 12px;
+    word-break: break-word;
+    line-height: 1.25;
+  }
+
+  .match-tile.ar-tile {
+    font-size: 0.86rem;
+  }
+
+  /* Context Builder Mobile */
+  .context-stage-card {
+    padding: 16px 14px;
+    border-radius: 18px;
+  }
+
+  .context-arena-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .context-chips-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .context-editor-backdrop,
+  .context-editor-textarea {
+    min-height: 135px;
+    padding: 12px;
+  }
+
+  .context-actions-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Word Manager & Explorer Mobile */
+  .manage-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .manage-card,
+  .manage-card.studio-card {
+    padding: 16px 14px;
+    border-radius: 16px;
+  }
+
+  .form-row.two-col {
+    grid-template-columns: 1fr;
+  }
+
+  .wordlist-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .wordlist-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .wordlist-controls .input-field.search {
+    grid-column: 1 / -1;
+    width: 100% !important;
+  }
+
+  .wordlist-controls .filter-select,
+  .wordlist-controls .filter-select-sm,
+  #filterMastery {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .wordlist-scroll-box {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-height: 60dvh;
+  }
+
+  .wordlist-table {
+    min-width: 620px;
+  }
+
+  .bento-cards-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Popovers, Modals & Toasts Mobile Positioning */
+  .modal-backdrop {
+    padding: 12px;
+  }
+
+  .modal-dialog,
+  .modal-dialog.update-dialog,
+  .modal-dialog.guide-dialog {
+    width: 100%;
+    max-width: calc(100vw - 24px);
+    max-height: 88dvh;
+    border-radius: 18px;
+  }
+
+  .data-settings-popover {
+    position: fixed !important;
+    left: 12px !important;
+    right: 12px !important;
+    top: auto !important;
+    bottom: calc(80px + env(safe-area-inset-bottom, 0px)) !important;
+    width: auto !important;
+    max-width: none !important;
+    z-index: 1250 !important;
+  }
+
+  .toast-container {
+    bottom: calc(82px + env(safe-area-inset-bottom, 0px)) !important;
+    left: 12px !important;
+    right: 12px !important;
+    align-items: center;
+  }
+
+  .toast {
+    max-width: 100%;
+    text-align: center;
+  }
+
+  .shortcuts-hint {
+    display: none !important;
   }
 }
+
+@media (max-width: 440px) {
+  .pos-pill-group {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .card-scene {
+    height: 265px;
+  }
+
+  .match-tile {
+    min-height: 54px;
+    font-size: 0.74rem;
+    padding: 6px 4px;
+  }
+
+  .btn-guide-header span {
+    display: none;
+  }
+}
+
 
 
