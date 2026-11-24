@@ -1,13 +1,13 @@
 {
-  "version": "1.4.7",
-  "build": 39,
+  "version": "1.4.8",
+  "build": 40,
   "date": "2026-11-24",
-  "notes": "✨ VocabMaster v1.4.7: Modern Cyber-Acoustic 3D Audio Spelling Studio with radiating soundwaves, metallic 3D speaker, live streak & accuracy badges, and Arabic shortcut support.",
+  "notes": "✨ VocabMaster v1.4.8: Upgraded Audio Spelling with the exact 3D metallic glass speaker asset, removed microphone icon from input, and enhanced soundwave acoustics.",
   "changed_files": [
     "index.html",
     "css/style.css",
-    "js/app.js",
-    "version.json"
+    "version.json",
+    "assets/icons/speaker-3d.png"
   ],
   "update_exe": true,
   "files": [
@@ -22,6 +22,7 @@
     "assets/icons/favicon.png",
     "assets/icons/favicon-32.png",
     "assets/icons/favicon-16.png",
+    "assets/icons/speaker-3d.png",
     "VocabMaster.exe"
   ]
 }
