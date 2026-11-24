@@ -1277,6 +1277,8 @@ function rollContextTargetWords() {
   const pool = getActiveWords().length >= 3 ? getActiveWords() : getAllWordsWithUnit();
   const input = $("#contextSentenceInput");
   if (input) input.value = "";
+  const backdrop = $("#contextHighlightBackdrop");
+  if (backdrop) backdrop.innerHTML = "";
 
   if (pool.length < 3) {
     contextTargetWords = pool;
@@ -1289,39 +1291,92 @@ function rollContextTargetWords() {
 function renderContextBuilder() {
   const chipsRow = $("#contextChipsRow");
   const statusLbl = $("#contextStatusLabel");
+  const circle = $("#contextCountCircle");
   const input = $("#contextSentenceInput");
   if (!chipsRow) return;
 
   if (contextTargetWords.length === 0) {
-    chipsRow.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--text-secondary);padding:20px;">Add at least 3 words to your deck to start the Context Builder!</div>`;
-    if (statusLbl) statusLbl.textContent = "0 / 3 Words Used";
+    chipsRow.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--text-secondary);padding:24px;">Add at least 3 words to your deck to start the Context Builder!</div>`;
+    if (statusLbl) statusLbl.textContent = "/ 3 Words Connected";
+    if (circle) {
+      circle.textContent = "0";
+      circle.classList.remove("all-done");
+    }
     renderSavedContextSentences();
     return;
   }
 
-  const typed = (input ? input.value : "").toLowerCase();
+  const rawText = input ? input.value : "";
+  const typed = rawText.toLowerCase();
   let matchedCount = 0;
 
   chipsRow.innerHTML = "";
-  contextTargetWords.forEach((w) => {
+  contextTargetWords.forEach((w, idx) => {
     const cleanWord = w.word.toLowerCase().trim();
     const stem = cleanWord.length > 4 ? cleanWord.slice(0, cleanWord.length - 1) : cleanWord;
     const isMatched = typed.includes(cleanWord) || (stem.length >= 4 && typed.includes(stem));
     if (isMatched) matchedCount++;
 
-    const chip = document.createElement("div");
-    chip.className = `context-word-chip ${isMatched ? "matched" : ""}`;
-    chip.innerHTML = `
-      <div class="context-chip-en">${isMatched ? "✅ " : ""}${escapeHTML(w.word)}</div>
-      <div class="context-chip-ar">${escapeHTML(w.meaning)}</div>
+    const wrap = document.createElement("div");
+    wrap.className = "context-card-wrapper";
+    wrap.innerHTML = `
+      <div class="context-card-status ${isMatched ? "completed" : "pending"}">
+        Card ${idx + 1} (${isMatched ? "Completed" : "Pending"})
+      </div>
+      <div class="context-word-chip ${isMatched ? "matched" : ""}">
+        ${isMatched ? '<span class="card-check-badge">✓</span>' : ""}
+        <div class="context-chip-en">${escapeHTML(w.word)}</div>
+        <div class="context-chip-ar">${escapeHTML(w.meaning)}</div>
+      </div>
     `;
-    chipsRow.appendChild(chip);
+    chipsRow.appendChild(wrap);
   });
 
-  if (statusLbl) {
-    statusLbl.textContent = `${matchedCount} / ${contextTargetWords.length} Words Used`;
+  if (circle) {
+    circle.textContent = matchedCount;
+    if (matchedCount === contextTargetWords.length && matchedCount > 0) {
+      circle.classList.add("all-done");
+    } else {
+      circle.classList.remove("all-done");
+    }
   }
+
+  if (statusLbl) {
+    statusLbl.textContent = `/ ${contextTargetWords.length} Words Connected`;
+  }
+
+  // Update live inline keyword highlighting in the editor backdrop!
+  updateEditorHighlight(rawText);
+
   renderSavedContextSentences();
+}
+
+function updateEditorHighlight(rawText) {
+  const backdrop = $("#contextHighlightBackdrop");
+  if (!backdrop) return;
+  if (!rawText || contextTargetWords.length === 0) {
+    backdrop.innerHTML = "";
+    return;
+  }
+
+  let safe = escapeHTML(rawText);
+  contextTargetWords.forEach((w) => {
+    const wordClean = w.word.trim();
+    if (!wordClean) return;
+    const stem = wordClean.length > 4 ? wordClean.slice(0, wordClean.length - 1) : wordClean;
+    const patStr = `\\b(${escapeRegex(wordClean)}|${escapeRegex(stem)}[a-zA-Z]*)\\b`;
+    try {
+      const pattern = new RegExp(patStr, "gi");
+      safe = safe.replace(pattern, '<mark class="ctx-match">$1</mark>');
+    } catch (_) {}
+  });
+
+  if (safe.endsWith("\n")) safe += " ";
+  backdrop.innerHTML = safe;
+}
+
+function escapeRegex(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function saveContextBuilderSentence() {
@@ -1351,7 +1406,7 @@ function saveContextBuilderSentence() {
   });
 
   saveState();
-  toast(`✨ Sentence saved! Boosted mastery for ${boosted} word(s)!`, "success");
+  toast(`⚡ Connected! Boosted mastery for ${boosted} word(s) (+15% XP)!`, "success");
   rollContextTargetWords();
 }
 
@@ -2486,7 +2541,15 @@ function bindAllEvents() {
   const btnRollCtx = $("#btnRollContextWords");
   if (btnRollCtx) btnRollCtx.addEventListener("click", rollContextTargetWords);
   const inpCtx = $("#contextSentenceInput");
-  if (inpCtx) inpCtx.addEventListener("input", renderContextBuilder);
+  const bdropCtx = $("#contextHighlightBackdrop");
+  if (inpCtx) {
+    inpCtx.addEventListener("input", renderContextBuilder);
+    if (bdropCtx) {
+      inpCtx.addEventListener("scroll", () => {
+        bdropCtx.scrollTop = inpCtx.scrollTop;
+      });
+    }
+  }
   const btnSaveCtx = $("#btnSaveContextSentence");
   if (btnSaveCtx) btnSaveCtx.addEventListener("click", saveContextBuilderSentence);
 
@@ -2749,8 +2812,8 @@ const GITHUB_REPO = "George-F-63S/vocabmaster";
 const GITHUB_RAW_BASE = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/`;
 const UPDATER_PORT = 49555;
 const UPDATER_BASE = `http://127.0.0.1:${UPDATER_PORT}/api`;
-let appCurrentVersion = "1.4.4";
-let appCurrentBuild = 36;
+let appCurrentVersion = "1.4.5";
+let appCurrentBuild = 37;
 
 function startUpdaterHeartbeat() {
   // Ping local C# launcher every 15 seconds to keep it informed the app is open
