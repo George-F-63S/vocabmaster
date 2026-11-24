@@ -4104,6 +4104,136 @@ select.input-field option { background: var(--bg-secondary); color: #fff; }
 @keyframes toastIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes toastOut { from { opacity: 1; } to { opacity: 0; transform: translateY(-8px); } }
 
+/* ══════════════════ CUSTOM CYBERPUNK CONFIRM DELETE MODAL ══════════════════ */
+.modal-dialog.confirm-delete-dialog {
+  background: rgba(11, 17, 34, 0.94);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(244, 63, 94, 0.48);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 38px rgba(244, 63, 94, 0.24);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 440px;
+  overflow: hidden;
+  animation: scaleUpDialog 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.confirm-danger-bubble {
+  background: rgba(244, 63, 94, 0.16) !important;
+  border: 1px solid rgba(244, 63, 94, 0.48) !important;
+  color: #fb7185 !important;
+  box-shadow: 0 0 18px rgba(244, 63, 94, 0.28);
+}
+
+.confirm-modal-message {
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.55;
+  color: #e2e8f0;
+  margin: 0;
+  white-space: pre-line;
+  word-break: break-word;
+}
+
+.btn-danger-neon {
+  background: linear-gradient(135deg, #e11d48 0%, #f43f5e 100%);
+  color: #ffffff;
+  border: 1px solid rgba(251, 113, 133, 0.65);
+  border-radius: 10px;
+  padding: 9px 22px;
+  font-family: var(--font-main);
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 18px rgba(244, 63, 94, 0.38);
+  transition: transform 0.18s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.btn-danger-neon:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+  box-shadow: 0 6px 26px rgba(244, 63, 94, 0.65), 0 0 18px rgba(244, 63, 94, 0.45);
+}
+
+.btn-danger-neon:active {
+  transform: translateY(0) scale(0.97);
+}
+
+/* ══════════════════ SMART UNDO TOAST NOTIFICATION ══════════════════ */
+.toast.undo-toast {
+  pointer-events: auto;
+  position: relative;
+  overflow: hidden;
+  padding: 12px 16px 15px;
+  background: rgba(11, 18, 36, 0.96);
+  border: 1px solid rgba(0, 240, 255, 0.42);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.68), 0 0 22px rgba(0, 240, 255, 0.16);
+  color: #f1f5f9;
+  animation: toastIn 0.22s ease forwards;
+  min-width: 280px;
+  max-width: min(420px, calc(100vw - 28px));
+}
+
+.toast.undo-toast.closing {
+  animation: toastOut 0.25s ease forwards;
+}
+
+.undo-toast-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.undo-toast-msg {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  line-height: 1.35;
+}
+
+.toast-undo-btn {
+  flex-shrink: 0;
+  background: rgba(0, 240, 255, 0.14);
+  border: 1px solid rgba(0, 240, 255, 0.65);
+  color: #00f0ff;
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-family: var(--font-main);
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.22);
+  transition: transform 0.15s ease, background 0.18s ease, box-shadow 0.18s ease;
+}
+
+.toast-undo-btn:hover {
+  background: rgba(0, 240, 255, 0.26);
+  box-shadow: 0 0 18px rgba(0, 240, 255, 0.45);
+  transform: translateY(-1px);
+}
+
+.toast-undo-btn:active {
+  transform: scale(0.96);
+}
+
+.toast-progress-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: rgba(148, 163, 184, 0.15);
+}
+
+.toast-progress-bar {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #00f0ff, #38bdf8, #a855f7);
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+  transform-origin: left center;
+}
+
 .shortcuts-hint {
   position: fixed;
   bottom: 12px;
