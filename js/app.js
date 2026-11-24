@@ -2066,8 +2066,81 @@ function deleteWord(wordId, unitId) {
 }
 
 function handleBulkAdd(text) {
-  if (!text || !text.trim()) return toast("Paste words using format: word = meaning", "error");
+  const trimmed = (text || "").trim();
+  if (!trimmed) return toast("Paste words (word = meaning) or JSON array!", "error");
 
+  // 1. Smart JSON Auto-Detection (JSON Array, { words: [...] }, or Full Backup { units: {...} })
+  if (trimmed.startsWith("[") || trimmed.startsWith("{")) {
+    let parsed = null;
+    try {
+      parsed = JSON.parse(trimmed);
+    } catch (_) {
+      // Try wrapping comma-separated objects in [ ... ] if outer brackets were omitted
+      try {
+        parsed = JSON.parse("[" + trimmed.replace(/,\s*$/, "") + "]");
+      } catch (_) {}
+    }
+
+    if (parsed && typeof parsed === "object") {
+      // Full backup JSON
+      if (parsed.units && typeof parsed.units === "object" && Object.keys(parsed.units).length > 0) {
+        state.units = parsed.units;
+        if (parsed.mistakes && typeof parsed.mistakes === "object") state.mistakes = parsed.mistakes;
+        const keys = Object.keys(state.units);
+        state.activeUnitId = keys.length > 0 ? keys[0] : null;
+        $("#bulkInput").value = "";
+        saveState();
+        renderUnitsToolbar();
+        renderExplorer();
+        renderFlashcard();
+        populateAddWordUnitSelect();
+        populateBulkUnitSelect();
+        const totalWords = getAllWordsWithUnit().length;
+        return toast(`✅ Restored ${keys.length} units & ${totalWords} words from JSON!`, "success");
+      }
+
+      const incoming = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.words) ? parsed.words : []);
+      const valid = incoming
+        .filter((w) => w && (w.word || w.Word) && (w.meaning || w.Meaning))
+        .map((w, idx) => ({
+          id: "w_" + Date.now().toString(36) + "_" + idx + "_" + Math.random().toString(36).slice(2, 5),
+          word: String(w.word || w.Word).trim(),
+          type: String(w.type || w.Type || "Noun").trim(),
+          meaning: String(w.meaning || w.Meaning).trim(),
+          example: String(w.example || w.Example || "").trim(),
+          exampleAr: String(w.exampleAr || w.example_ar || w.ExampleAr || "").trim(),
+          mastery: typeof w.mastery === "number" ? w.mastery : 0
+        }));
+
+      if (valid.length > 0) {
+        const selectedPart = $("#selBulkPart") && $("#selBulkPart").value;
+        const selectedUnit = $("#selBulkUnit") && $("#selBulkUnit").value;
+        let targetUnitId = selectedPart || selectedUnit || (state.activeUnitId === "all" || state.activeUnitId === "mistakes" ? getFirstAvailableUnitId() : state.activeUnitId);
+        let unit = state.units[targetUnitId];
+
+        if (!unit) {
+          const uName = parsed.unitName || "Imported Unit";
+          const uKey = "unit_" + Date.now().toString(36);
+          state.units[uKey] = { id: uKey, name: uName, createdAt: Date.now(), words: [] };
+          state.activeUnitId = uKey;
+          unit = state.units[uKey];
+        }
+
+        unit.words.push(...valid);
+        $("#bulkInput").value = "";
+        saveState();
+        renderUnitsToolbar();
+        renderExplorer();
+        renderFlashcard();
+        populateAddWordUnitSelect();
+        populateBulkUnitSelect();
+        return toast(`📥 Added ${valid.length} JSON words to "${unit.name}"!`, "success");
+      }
+      return toast("❌ JSON valid syntax not found or missing word/meaning fields.", "error");
+    }
+  }
+
+  // 2. Plain Text Format: word = meaning (or word - meaning)
   const selectedPart = $("#selBulkPart") && $("#selBulkPart").value;
   const selectedUnit = $("#selBulkUnit") && $("#selBulkUnit").value;
   const targetUnitId = selectedPart || selectedUnit || (state.activeUnitId === "all" || state.activeUnitId === "mistakes" ? getFirstAvailableUnitId() : state.activeUnitId);
@@ -2075,11 +2148,12 @@ function handleBulkAdd(text) {
   if (!unit) return toast("⚠️ Please create a unit / folder first (+ New Unit)!", "error");
 
   let count = 0;
-  text.split("\n").forEach((line) => {
-    if (!line.includes("=")) return;
-    const parts = line.split("=");
+  trimmed.split("\n").forEach((line) => {
+    const delimiter = line.includes("=") ? "=" : line.includes(" - ") ? " - " : null;
+    if (!delimiter) return;
+    const parts = line.split(delimiter);
     const w = parts[0].trim();
-    const m = parts.slice(1).join("=").trim();
+    const m = parts.slice(1).join(delimiter).trim();
     if (w && m) {
       unit.words.push({
         id: "w_" + Date.now().toString(36) + "_" + count + "_" + Math.random().toString(36).slice(2, 5),
@@ -2101,11 +2175,10 @@ function handleBulkAdd(text) {
     renderExplorer();
     renderFlashcard();
     populateAddWordUnitSelect();
-  populateBulkUnitSelect();
     populateBulkUnitSelect();
     toast(`📥 Added ${count} words to "${unit.name}"`, "success");
   } else {
-    toast("No lines matched the format: word = meaning", "error");
+    toast("No lines matched: word = meaning or valid JSON array", "error");
   }
 }
 
