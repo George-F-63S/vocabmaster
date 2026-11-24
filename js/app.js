@@ -546,10 +546,22 @@ function renderUnitsToolbar() {
     if (aCountEl) aCountEl.textContent = totalAll;
   }
 
-  // 3. Header active deck title
+  // 3. Header active deck title & indented sub-part tree
   const headerTitleEl = $("#headerActiveUnitTitle");
-  if (headerTitleEl) {
-    headerTitleEl.textContent = getActiveUnitName();
+  const headerPartEl = $("#headerActivePartSub");
+  const activeUnitObj = state.units[state.activeUnitId];
+  if (activeUnitObj && activeUnitObj.parentId && state.units[activeUnitObj.parentId]) {
+    if (headerTitleEl) headerTitleEl.textContent = state.units[activeUnitObj.parentId].name;
+    if (headerPartEl) {
+      headerPartEl.classList.remove("hidden");
+      headerPartEl.innerHTML = `<span class="part-tree-branch">└─</span><span class="part-tree-name">${escapeHTML(activeUnitObj.name)}</span><span class="part-glow-dot"></span>`;
+    }
+  } else {
+    if (headerTitleEl) headerTitleEl.textContent = getActiveUnitName();
+    if (headerPartEl) {
+      headerPartEl.classList.add("hidden");
+      headerPartEl.innerHTML = "";
+    }
   }
 
   // 4. Unit Parts Bar (below header when active unit or its parent has parts)
