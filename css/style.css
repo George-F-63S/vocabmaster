@@ -6812,29 +6812,26 @@ button[title*='Delete']:hover,
    LIGHTS OUT / FOCUS MODE STATES
    ══════════════════════════════════════════════════════════════════════ */
 
-/* Smooth fade transition for workspace elements */
+/* Smooth GPU-only opacity fade transition for workspace elements (no expensive filter/bg repaints) */
 .app-header,
 .unit-parts-bar,
-.app-main,
-#mainContent {
-  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.4s ease, filter 0.4s ease;
+.app-main {
+  transition: opacity 0.26s ease-out;
+  will-change: opacity;
 }
 
-/* OFF State: Workspace collapses into pitch-black focus mode */
+/* OFF State: Workspace fades smoothly into focus mode */
 body.lights-out .app-header,
 body.lights-out .unit-parts-bar,
-body.lights-out .app-main,
-body.lights-out #mainContent {
+body.lights-out .app-main {
   opacity: 0 !important;
   pointer-events: none !important;
   visibility: hidden !important;
-  filter: brightness(0.1);
 }
 
 body.lights-out .app-shell {
   background-color: #020617 !important;
   background-image: none !important;
-  transition: background 0.4s ease;
 }
 
 /* Left Sidebar MUST ALWAYS REMAIN VISIBLE, INTERACTIVE, AND ACTIVE */
@@ -7920,6 +7917,17 @@ body.lights-out .cyber-lamp-fixture:hover .lamp-bulb {
     width: 10px !important;
     height: 10px !important;
     bottom: -5px !important;
+    box-shadow: 0 0 12px #00f0ff !important;
+    transition: none !important;
+  }
+
+  .lamp-cord,
+  .lamp-shade {
+    transition: none !important;
+  }
+
+  .cyber-lamp-fixture.spring-back .lamp-hanger {
+    animation: lampBounce 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) forwards !important;
   }
 
   /* Sleek reordered Bottom Navigation Bar (Cards | Arena | Decks | Context | Manage) */
