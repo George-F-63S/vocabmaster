@@ -4135,6 +4135,42 @@ select.input-field option { background: var(--bg-secondary); color: #fff; }
   word-break: break-word;
 }
 
+.confirm-target-box {
+  margin: 12px 0 8px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: rgba(6, 11, 24, 0.78);
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.confirm-target-box.hidden,
+.confirm-modal-note.hidden {
+  display: none !important;
+}
+
+.confirm-target-unit {
+  font-size: 1.12rem;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.25;
+}
+
+.confirm-target-box .header-active-part {
+  margin-top: 2px;
+  padding: 2px 10px 2px 8px;
+  font-size: 0.84rem;
+}
+
+.confirm-modal-note {
+  font-size: 0.82rem;
+  color: #94a3b8;
+  margin: 4px 0 0;
+}
+
 .btn-danger-neon {
   background: linear-gradient(135deg, #e11d48 0%, #f43f5e 100%);
   color: #ffffff;

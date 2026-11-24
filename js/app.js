@@ -780,9 +780,16 @@ async function clearActiveUnitWords() {
   const parts = !unit.parentId ? getChildParts(unit.id) : [];
   const totalCount = unit.words.length + parts.reduce((acc, p) => acc + p.words.length, 0);
   if (totalCount === 0) return toast("This unit is already empty!", "info");
+  const parentUnit = unit.parentId && state.units[unit.parentId] ? state.units[unit.parentId] : null;
+  const targetHtml = parentUnit
+    ? `<div class="confirm-target-unit">${escapeHTML(parentUnit.name)}</div><div class="header-active-part"><span class="part-tree-branch">└─</span><span class="part-tree-name">${escapeHTML(unit.name)}</span><span class="part-glow-dot"></span></div>`
+    : `<div class="confirm-target-unit">${escapeHTML(unit.name)}</div>`;
+
   const ok = await showConfirmModal({
     title: "Confirm Delete",
-    message: `Clear all ${totalCount} words in "${getActiveUnitName()}"?\nThe unit structure will remain.`,
+    message: `Clear all ${totalCount} words in:`,
+    targetHtml,
+    note: "The unit structure will remain.",
     confirmLabel: "Delete"
   });
   if (!ok) return;
@@ -823,9 +830,11 @@ async function deleteActiveUnit() {
 
   if (unit.parentId && state.units[unit.parentId]) {
     const parentId = unit.parentId;
+    const parentUnit = state.units[parentId];
     const ok = await showConfirmModal({
       title: "Confirm Delete",
-      message: `Delete part "${unit.name}" (${unit.words.length} words) from "${state.units[parentId].name}"?`,
+      message: `Delete this part (${unit.words.length} words)?`,
+      targetHtml: `<div class="confirm-target-unit">${escapeHTML(parentUnit.name)}</div><div class="header-active-part"><span class="part-tree-branch">└─</span><span class="part-tree-name">${escapeHTML(unit.name)}</span><span class="part-glow-dot"></span></div>`,
       confirmLabel: "Delete"
     });
     if (!ok) return;
@@ -838,7 +847,8 @@ async function deleteActiveUnit() {
     const extra = parts.length > 0 ? ` and its ${parts.length} parts` : "";
     const ok = await showConfirmModal({
       title: "Confirm Delete",
-      message: `Permanently delete "${unit.name}"${extra} (${totalCount} words)?`,
+      message: `Permanently delete this unit${extra} (${totalCount} words)?`,
+      targetHtml: `<div class="confirm-target-unit">${escapeHTML(unit.name)}</div>`,
       confirmLabel: "Delete"
     });
     if (!ok) return;
@@ -3879,11 +3889,13 @@ function showUndoToast(msg, onUndo, durationMs = 5500) {
   }
 }
 
-function showConfirmModal({ title = "Confirm Delete", sub = "You can undo this action right after", message = "", confirmLabel = "Delete" } = {}) {
+function showConfirmModal({ title = "Confirm Delete", sub = "You can undo this action right after", message = "", targetHtml = "", note = "", confirmLabel = "Delete" } = {}) {
   const backdrop = $("#confirmModalBackdrop");
   const titleEl = $("#confirmModalTitle");
   const subEl = $("#confirmModalSub");
   const msgEl = $("#confirmModalMessage");
+  const targetEl = $("#confirmModalTarget");
+  const noteEl = $("#confirmModalNote");
   const btnAccept = $("#btnAcceptConfirmModal");
   const btnCancel = $("#btnCancelConfirmModal");
   const btnClose = $("#btnCloseConfirmModal");
@@ -3895,6 +3907,24 @@ function showConfirmModal({ title = "Confirm Delete", sub = "You can undo this a
   if (titleEl) titleEl.textContent = title;
   if (subEl) subEl.textContent = sub;
   if (msgEl) msgEl.textContent = message;
+  if (targetEl) {
+    if (targetHtml) {
+      targetEl.innerHTML = targetHtml;
+      targetEl.classList.remove("hidden");
+    } else {
+      targetEl.innerHTML = "";
+      targetEl.classList.add("hidden");
+    }
+  }
+  if (noteEl) {
+    if (note) {
+      noteEl.textContent = note;
+      noteEl.classList.remove("hidden");
+    } else {
+      noteEl.textContent = "";
+      noteEl.classList.add("hidden");
+    }
+  }
   if (btnAccept) btnAccept.textContent = confirmLabel;
 
   backdrop.classList.remove("hidden");
