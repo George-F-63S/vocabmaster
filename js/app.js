@@ -4,6 +4,7 @@
    ═══════════════════════════════════════════════════════════════ */
 
 const STORAGE_KEY = "vocabmaster_v3_ultra_store";
+const IS_DESKTOP_SHELL = Boolean(window.chrome && window.chrome.webview) || location.protocol === "file:";
 
 // ────────────────────── INITIAL SEED DATA (CLEAN STATE) ──────────────────────
 // Fresh slate: Users start with a clean workspace (no pre-loaded folders or words).
@@ -83,6 +84,7 @@ function loadState() {
 }
 
 async function hydrateFromDiskStore() {
+  if (!IS_DESKTOP_SHELL) return;
   try {
     const res = await fetch(`${UPDATER_BASE}/load-store`);
     if (res.ok) {
@@ -120,6 +122,7 @@ function seedInitialState() {
 function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   updateHeaderStats();
+  if (!IS_DESKTOP_SHELL) return;
   // Persistent disk backup via local C# API
   try {
     fetch(`${UPDATER_BASE}/save-store`, {
@@ -2596,6 +2599,7 @@ function switchAppMode(mode) {
   stopPocketLoop();
   currentMode = mode;
   $$(".nav-btn").forEach((b) => b.classList.toggle("active", b.dataset.mode === mode));
+  $$(".mobile-nav-btn[data-mobile-mode]").forEach((b) => b.classList.toggle("active", b.dataset.mobileMode === mode));
   $$(".mode-panel").forEach((p) => p.classList.remove("active"));
 
   if (mode === "flashcards") {
@@ -2659,14 +2663,48 @@ function bindAllEvents() {
 
   const btnMobileSidebar = $("#btnMobileSidebar");
   const sidebarBackdrop = $("#sidebarBackdrop");
+  const appSidebarEl = $("#appSidebar");
   if (btnMobileSidebar) {
     btnMobileSidebar.addEventListener("click", () => {
-      $("#appSidebar").classList.toggle("mobile-open");
+      appSidebarEl.classList.toggle("mobile-open");
       if (sidebarBackdrop) sidebarBackdrop.classList.toggle("open");
     });
   }
   if (sidebarBackdrop) {
     sidebarBackdrop.addEventListener("click", closeMobileSidebar);
+  }
+
+  // Mobile Bottom Navigation Bar
+  $$(".mobile-nav-btn[data-mobile-mode]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      switchAppMode(btn.dataset.mobileMode);
+      closeMobileSidebar();
+    });
+  });
+  const btnMobileBottomDecks = $("#btnMobileBottomDecks");
+  if (btnMobileBottomDecks && appSidebarEl) {
+    btnMobileBottomDecks.addEventListener("click", () => {
+      appSidebarEl.classList.toggle("mobile-open");
+      if (sidebarBackdrop) sidebarBackdrop.classList.toggle("open");
+    });
+  }
+
+  // Swipe-left to close mobile drawer cleanly
+  if (appSidebarEl) {
+    let drawerTouchX = 0;
+    let drawerTouchY = 0;
+    appSidebarEl.addEventListener("touchstart", (e) => {
+      if (e.touches && e.touches[0]) {
+        drawerTouchX = e.touches[0].clientX;
+        drawerTouchY = e.touches[0].clientY;
+      }
+    }, { passive: true });
+    appSidebarEl.addEventListener("touchend", (e) => {
+      if (!appSidebarEl.classList.contains("mobile-open") || !e.changedTouches || !e.changedTouches[0]) return;
+      const dx = e.changedTouches[0].clientX - drawerTouchX;
+      const dy = Math.abs(e.changedTouches[0].clientY - drawerTouchY);
+      if (dx < -55 && dy < 60) closeMobileSidebar();
+    }, { passive: true });
   }
 
   // Units toolbar
@@ -3049,10 +3087,11 @@ const GITHUB_REPO = "George-F-63S/vocabmaster";
 const GITHUB_RAW_BASE = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/`;
 const UPDATER_PORT = 49555;
 const UPDATER_BASE = `http://127.0.0.1:${UPDATER_PORT}/api`;
-let appCurrentVersion = "1.5.0";
-let appCurrentBuild = 44;
+let appCurrentVersion = "1.5.2";
+let appCurrentBuild = 47;
 
 function startUpdaterHeartbeat() {
+  if (!IS_DESKTOP_SHELL) return;
   // Ping local C# launcher every 15 seconds to keep it informed the app is open
   setInterval(() => {
     fetch(`${UPDATER_BASE}/heartbeat`, { method: "POST" }).catch(() => {});
@@ -3060,16 +3099,21 @@ function startUpdaterHeartbeat() {
 }
 
 async function fetchCurrentVersion() {
-  try {
-    const res = await fetch(`${UPDATER_BASE}/version`);
-    if (res.ok) {
-      const data = await res.json();
-      if (data) {
-        if (data.version) appCurrentVersion = data.version;
-        if (data.build) appCurrentBuild = Number(data.build) || appCurrentBuild;
+  let fetched = false;
+  if (IS_DESKTOP_SHELL) {
+    try {
+      const res = await fetch(`${UPDATER_BASE}/version`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data) {
+          if (data.version) appCurrentVersion = data.version;
+          if (data.build) appCurrentBuild = Number(data.build) || appCurrentBuild;
+          fetched = true;
+        }
       }
-    }
-  } catch (e) {
+    } catch (_) {}
+  }
+  if (!fetched) {
     try {
       const resLocal = await fetch("./version.json?t=" + Date.now());
       if (resLocal.ok) {
@@ -3168,6 +3212,27 @@ function isNewerSemver(remote, current) {
 }
 
 async function checkForUpdates(isManual = false) {
+  if (!IS_DESKTOP_SHELL) {
+    if (isManual) {
+      if ("serviceWorker" in navigator) {
+        try {
+          const reg = await navigator.serviceWorker.getRegistration();
+          if (reg) {
+            await reg.update();
+            if (reg.waiting) {
+              reg.waiting.postMessage({ type: "SKIP_WAITING" });
+              toast("🔄 Updating VocabMaster PWA...", "success");
+              setTimeout(() => location.reload(), 500);
+              return;
+            }
+          }
+        } catch (_) {}
+      }
+      toast(`✨ VocabMaster PWA is up to date (v${appCurrentVersion})`, "success");
+    }
+    return;
+  }
+
   if (isManual) {
     toast("🔍 جاري التحقق من وجود تحديثات على GitHub...", "info");
   }
@@ -3589,6 +3654,39 @@ function initCard3DTiltAndMagneticHover() {
   const glareFront = $("#cardGlareFront");
   const glareBack = $("#cardGlareBack");
 
+  // Mobile Touch Swipe Left/Right on Flashcard to Navigate Cards
+  if (cardScene) {
+    let swipeStartX = 0;
+    let swipeStartY = 0;
+    let swipeActive = false;
+
+    cardScene.addEventListener("touchstart", (e) => {
+      if (e.touches && e.touches.length === 1) {
+        swipeStartX = e.touches[0].clientX;
+        swipeStartY = e.touches[0].clientY;
+        swipeActive = true;
+      } else {
+        swipeActive = false;
+      }
+    }, { passive: true });
+
+    cardScene.addEventListener("touchend", (e) => {
+      if (!swipeActive || !e.changedTouches || !e.changedTouches[0]) return;
+      swipeActive = false;
+      const dx = e.changedTouches[0].clientX - swipeStartX;
+      const dy = Math.abs(e.changedTouches[0].clientY - swipeStartY);
+      if (Math.abs(dx) > 55 && dy < 48) {
+        if (dx < 0) navigateCard(1);
+        else navigateCard(-1);
+      }
+    }, { passive: true });
+  }
+
+  // Only enable cursor 3D hover tilt & magnetic pull on fine-pointer desktop devices
+  if (!window.matchMedia || !window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+    return;
+  }
+
   if (cardScene && cardBody) {
     let targetTiltX = 0;
     let targetTiltY = 0;
@@ -3814,33 +3912,51 @@ function initCyberLampFocusMode() {
     applyLampState(nextState);
   }
 
-  // Pointer interactions for realistic pull cord physics
+  // Unified Pointer Events for mouse + touch pull-cord physics (prevents mobile double-toggle)
+  const hanger = document.getElementById("lampHanger");
   let isPulling = false;
+  let activePointerId = null;
+  let pullStartY = 0;
 
-  lamp.addEventListener("mousedown", (e) => {
-    if (e.button !== 0) return;
+  lamp.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
     isPulling = true;
+    activePointerId = e.pointerId;
+    pullStartY = e.clientY;
     lamp.classList.remove("spring-back");
     lamp.classList.add("pulling");
+    try { lamp.setPointerCapture(e.pointerId); } catch (_) {}
   });
 
-  window.addEventListener("mouseup", () => {
-    if (isPulling) {
-      isPulling = false;
-      toggleLamp();
+  lamp.addEventListener("pointermove", (e) => {
+    if (!isPulling || e.pointerId !== activePointerId || !hanger) return;
+    const dy = Math.max(0, Math.min(26, e.clientY - pullStartY));
+    if (dy > 4) {
+      hanger.style.transition = "none";
+      hanger.style.transform = `translateY(${Math.max(14, dy)}px)`;
     }
   });
 
-  lamp.addEventListener("touchstart", (e) => {
-    isPulling = true;
-    lamp.classList.remove("spring-back");
-    lamp.classList.add("pulling");
-  }, { passive: true });
+  function finishLampPull(e) {
+    if (!isPulling) return;
+    if (e && activePointerId !== null && e.pointerId !== undefined && e.pointerId !== activePointerId) return;
+    isPulling = false;
+    activePointerId = null;
+    if (hanger) {
+      hanger.style.transition = "";
+      hanger.style.transform = "";
+    }
+    toggleLamp();
+  }
 
-  window.addEventListener("touchend", () => {
-    if (isPulling) {
-      isPulling = false;
-      toggleLamp();
+  lamp.addEventListener("pointerup", finishLampPull);
+  lamp.addEventListener("pointercancel", () => {
+    isPulling = false;
+    activePointerId = null;
+    lamp.classList.remove("pulling");
+    if (hanger) {
+      hanger.style.transition = "";
+      hanger.style.transform = "";
     }
   });
 
@@ -3870,6 +3986,84 @@ function initCyberLampFocusMode() {
   });
 }
 
+/* ══════════════════════════════════════════════════════════════════════
+   PROGRESSIVE WEB APP (OFFLINE SERVICE WORKER & INSTALL PROMPT)
+   ══════════════════════════════════════════════════════════════════════ */
+function initPWA() {
+  if (IS_DESKTOP_SHELL) return;
+
+  // 1. Register Offline Service Worker
+  if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
+    navigator.serviceWorker.register("./sw.js", { scope: "./" })
+      .then((reg) => {
+        reg.addEventListener("updatefound", () => {
+          const newWorker = reg.installing;
+          if (!newWorker) return;
+          newWorker.addEventListener("statechange", () => {
+            if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+              newWorker.postMessage({ type: "SKIP_WAITING" });
+            }
+          });
+        });
+      })
+      .catch((err) => {
+        console.warn("SW registration skipped:", err);
+      });
+
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (refreshing) return;
+      refreshing = true;
+      location.reload();
+    });
+  }
+
+  // 2. Install Prompt ("Add to Home Screen") for Android/Chrome & iOS Safari
+  const btnInstall = document.getElementById("btnPwaInstall");
+  if (!btnInstall) return;
+
+  const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+  if (isStandalone) {
+    btnInstall.classList.add("hidden");
+    return;
+  }
+
+  let deferredPrompt = null;
+
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    btnInstall.classList.remove("hidden");
+  });
+
+  window.addEventListener("appinstalled", () => {
+    deferredPrompt = null;
+    btnInstall.classList.add("hidden");
+    toast("📱 VocabMaster installed to Home Screen!", "success");
+  });
+
+  // Show gentle iOS Safari install helper if running on iOS Safari outside standalone mode
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  if (isIOS) {
+    btnInstall.classList.remove("hidden");
+  }
+
+  btnInstall.addEventListener("click", async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const choice = await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      if (choice && choice.outcome === "accepted") {
+        btnInstall.classList.add("hidden");
+      }
+      closeMobileSidebar();
+    } else if (isIOS) {
+      closeMobileSidebar();
+      toast("📲 On iPhone/iPad: tap Share (⎋) then 'Add to Home Screen'", "info");
+    }
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   loadState();
   bindAllEvents();
@@ -3877,16 +4071,19 @@ document.addEventListener("DOMContentLoaded", () => {
   initGuideEvents();
   initCard3DTiltAndMagneticHover();
   initCyberLampFocusMode();
+  initPWA();
   startUpdaterHeartbeat();
   fetchCurrentVersion();
   renderUnitsToolbar();
   switchAppMode("flashcards");
 
-  // Check for updates in background on startup (after 800ms) and periodically
-  setTimeout(() => {
-    checkForUpdates(false);
-  }, 800);
-  setInterval(() => {
-    checkForUpdates(false);
-  }, 60000);
+  // Check for updates in background on startup (desktop only)
+  if (IS_DESKTOP_SHELL) {
+    setTimeout(() => {
+      checkForUpdates(false);
+    }, 800);
+    setInterval(() => {
+      checkForUpdates(false);
+    }, 60000);
+  }
 });
