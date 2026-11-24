@@ -2,7 +2,7 @@
    VocabMaster PWA Service Worker — Full Offline App Shell & Assets
    ═══════════════════════════════════════════════════════════════════ */
 
-const CACHE_NAME = "vocabmaster-pwa-v1.5.2-b58";
+const CACHE_NAME = "vocabmaster-pwa-v1.5.2-b59";
 
 const APP_SHELL_ASSETS = [
   "./",
