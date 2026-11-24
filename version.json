@@ -1,8 +1,8 @@
 {
-  "version": "1.4.5",
-  "build": 37,
+  "version": "1.4.6",
+  "build": 38,
   "date": "2026-11-24",
-  "notes": "✨ VocabMaster v1.4.5: Redesigned Active Context Builder with Floating Glassmorphism Smart Word Cards, real-time green keyword highlighting inside editor, live combo counter, and gradient boost button.",
+  "notes": "✨ VocabMaster v1.4.6: Added cyber-neon notched card borders with floating glowing dots that transition from neon cyan to emerald green when typed in sentences.",
   "changed_files": [
     "index.html",
     "css/style.css",
