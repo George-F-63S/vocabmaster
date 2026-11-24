@@ -1,8 +1,8 @@
 {
-  "version": "1.4.4",
-  "build": 36,
+  "version": "1.4.5",
+  "build": 37,
   "date": "2026-11-24",
-  "notes": "✨ VocabMaster v1.4.4: Added responsive hover motion & neon glow across Speed Match cards (.match-tile), Show Hint button (.btn-hint), and reset action buttons (.btn-small) in Practice Arena.",
+  "notes": "✨ VocabMaster v1.4.5: Redesigned Active Context Builder with Floating Glassmorphism Smart Word Cards, real-time green keyword highlighting inside editor, live combo counter, and gradient boost button.",
   "changed_files": [
     "index.html",
     "css/style.css",
