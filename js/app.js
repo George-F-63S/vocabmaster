@@ -337,11 +337,17 @@ function toggleManualMistake(wordId) {
   if (currentMode === "flashcards") renderFlashcard();
 }
 
-function clearAllMistakes() {
+async function clearAllMistakes() {
   const count = getMistakesCount();
   if (count === 0) return toast("Mistakes deck is already empty!", "info");
-  if (!confirm(`Clear all ${count} words from the Mistakes deck?`)) return;
+  const ok = await showConfirmModal({
+    title: "Confirm Delete",
+    message: `Clear all ${count} words from the Mistakes deck?`,
+    confirmLabel: "Delete"
+  });
+  if (!ok) return;
 
+  const prevMistakes = JSON.parse(JSON.stringify(state.mistakes));
   state.mistakes = {};
   flashcardIndex = 0;
   saveState();
@@ -354,7 +360,13 @@ function clearAllMistakes() {
   } else {
     renderExplorer();
   }
-  toast("🧹 All recorded mistakes cleared!", "info");
+  showUndoToast(`Cleared ${count} mistakes successfully`, () => {
+    state.mistakes = prevMistakes;
+    saveState();
+    renderUnitsToolbar();
+    renderExplorer();
+    if (currentMode === "flashcards") renderFlashcard();
+  });
 }
 
 // ════════════════════════════════════════════════════
@@ -761,14 +773,22 @@ function createNewPart(parentId) {
   });
 }
 
-function clearActiveUnitWords() {
+async function clearActiveUnitWords() {
   if (state.activeUnitId === "all" || state.activeUnitId === "mistakes") return;
   const unit = state.units[state.activeUnitId];
   if (!unit) return;
   const parts = !unit.parentId ? getChildParts(unit.id) : [];
   const totalCount = unit.words.length + parts.reduce((acc, p) => acc + p.words.length, 0);
   if (totalCount === 0) return toast("This unit is already empty!", "info");
-  if (!confirm(`Clear all ${totalCount} words in "${getActiveUnitName()}"?\nThe unit structure will remain.`)) return;
+  const ok = await showConfirmModal({
+    title: "Confirm Delete",
+    message: `Clear all ${totalCount} words in "${getActiveUnitName()}"?\nThe unit structure will remain.`,
+    confirmLabel: "Delete"
+  });
+  if (!ok) return;
+
+  const prevUnits = JSON.parse(JSON.stringify(state.units));
+  const prevMistakes = JSON.parse(JSON.stringify(state.mistakes));
 
   unit.words.forEach((w) => delete state.mistakes[w.id]);
   unit.words = [];
@@ -781,17 +801,34 @@ function clearActiveUnitWords() {
   renderUnitsToolbar();
   renderExplorer();
   renderFlashcard();
-  toast(`🧹 Cleared words in "${unit.name}"`, "info");
+  showUndoToast(`Cleared ${totalCount} words from ${unit.name}`, () => {
+    state.units = prevUnits;
+    state.mistakes = prevMistakes;
+    saveState();
+    renderUnitsToolbar();
+    renderExplorer();
+    renderFlashcard();
+  });
 }
 
-function deleteActiveUnit() {
+async function deleteActiveUnit() {
   if (state.activeUnitId === "all" || state.activeUnitId === "mistakes") return;
   const unit = state.units[state.activeUnitId];
   if (!unit) return;
 
+  const prevUnits = JSON.parse(JSON.stringify(state.units));
+  const prevMistakes = JSON.parse(JSON.stringify(state.mistakes));
+  const prevActiveId = state.activeUnitId;
+  const deletedName = unit.name;
+
   if (unit.parentId && state.units[unit.parentId]) {
     const parentId = unit.parentId;
-    if (!confirm(`Delete part "${unit.name}" (${unit.words.length} words) from "${state.units[parentId].name}"?`)) return;
+    const ok = await showConfirmModal({
+      title: "Confirm Delete",
+      message: `Delete part "${unit.name}" (${unit.words.length} words) from "${state.units[parentId].name}"?`,
+      confirmLabel: "Delete"
+    });
+    if (!ok) return;
     unit.words.forEach((w) => delete state.mistakes[w.id]);
     delete state.units[state.activeUnitId];
     state.activeUnitId = parentId;
@@ -799,7 +836,12 @@ function deleteActiveUnit() {
     const parts = getChildParts(unit.id);
     const totalCount = getUnitTotalWordCount(unit.id);
     const extra = parts.length > 0 ? ` and its ${parts.length} parts` : "";
-    if (!confirm(`Permanently delete "${unit.name}"${extra} (${totalCount} words)?`)) return;
+    const ok = await showConfirmModal({
+      title: "Confirm Delete",
+      message: `Permanently delete "${unit.name}"${extra} (${totalCount} words)?`,
+      confirmLabel: "Delete"
+    });
+    if (!ok) return;
 
     unit.words.forEach((w) => delete state.mistakes[w.id]);
     parts.forEach((p) => {
@@ -815,7 +857,15 @@ function deleteActiveUnit() {
   renderUnitsToolbar();
   renderExplorer();
   renderFlashcard();
-  toast(`🗑️ Deleted "${unit.name}"`, "error");
+  showUndoToast(`Deleted ${deletedName} successfully`, () => {
+    state.units = prevUnits;
+    state.mistakes = prevMistakes;
+    state.activeUnitId = prevActiveId;
+    saveState();
+    renderUnitsToolbar();
+    renderExplorer();
+    renderFlashcard();
+  });
 }
 
 function populateAddWordUnitSelect() {
@@ -2070,13 +2120,29 @@ function deleteWord(wordId, unitId) {
   const unit = state.units[unitId];
   if (!unit) return;
 
+  const idx = unit.words.findIndex((w) => w.id === wordId);
+  if (idx === -1) return;
+  const deletedWord = unit.words[idx];
+  const prevMistake = state.mistakes[wordId] ? { ...state.mistakes[wordId] } : null;
+
   delete state.mistakes[wordId];
-  unit.words = unit.words.filter((w) => w.id !== wordId);
+  unit.words.splice(idx, 1);
   saveState();
   renderUnitsToolbar();
   renderExplorer();
   renderFlashcard();
-  toast("🗑️ Word deleted", "info");
+
+  showUndoToast(`Deleted "${deletedWord.word}" successfully`, () => {
+    const targetUnit = state.units[unitId];
+    if (!targetUnit) return;
+    const insertIdx = Math.min(idx, targetUnit.words.length);
+    targetUnit.words.splice(insertIdx, 0, deletedWord);
+    if (prevMistake) state.mistakes[wordId] = prevMistake;
+    saveState();
+    renderUnitsToolbar();
+    renderExplorer();
+    renderFlashcard();
+  });
 }
 
 function handleBulkAdd(text) {
@@ -2318,16 +2384,30 @@ function downloadJsonFile(obj, filename) {
   URL.revokeObjectURL(url);
 }
 
-function resetAllData() {
-  if (!confirm("⚠️ Warning: Delete all custom units and words and reset to default?")) return;
-  if (!confirm("Final Confirmation: All local data in V3 will be wiped.")) return;
+async function resetAllData() {
+  const ok = await showConfirmModal({
+    title: "Confirm Delete",
+    sub: "Final Confirmation: All local units and words will be wiped",
+    message: "Delete all custom units and words and reset VocabMaster to a clean workspace?",
+    confirmLabel: "Delete"
+  });
+  if (!ok) return;
 
+  const prevSnapshot = JSON.parse(JSON.stringify(state));
   localStorage.removeItem(STORAGE_KEY);
   seedInitialState();
+  saveState();
   renderUnitsToolbar();
   renderExplorer();
   renderFlashcard();
-  toast("🔄 Reset all data to default", "info");
+
+  showUndoToast("All data reset successfully", () => {
+    state = prevSnapshot;
+    saveState();
+    renderUnitsToolbar();
+    renderExplorer();
+    renderFlashcard();
+  });
 }
 
 function getSmartFiller(word, type) {
@@ -3745,6 +3825,123 @@ function toast(msg, type = "info") {
   el.textContent = msg;
   c.appendChild(el);
   setTimeout(() => el.remove(), 3000);
+}
+
+function showUndoToast(msg, onUndo, durationMs = 5500) {
+  const c = $("#toastContainer");
+  if (!c) return;
+
+  // Replace any active undo toast to keep stack clean
+  c.querySelectorAll(".toast.undo-toast").forEach((n) => n.remove());
+
+  const el = document.createElement("div");
+  el.className = "toast undo-toast";
+  el.innerHTML = `
+    <div class="undo-toast-row">
+      <span class="undo-toast-msg">${escapeHTML(msg)}</span>
+      <button type="button" class="toast-undo-btn">Undo ↩</button>
+    </div>
+    <div class="toast-progress-track">
+      <div class="toast-progress-bar"></div>
+    </div>
+  `;
+
+  c.appendChild(el);
+  const bar = el.querySelector(".toast-progress-bar");
+  const btn = el.querySelector(".toast-undo-btn");
+  let finished = false;
+
+  requestAnimationFrame(() => {
+    if (bar) {
+      bar.style.transition = `transform ${durationMs}ms linear`;
+      bar.style.transform = "scaleX(0)";
+    }
+  });
+
+  const dismiss = () => {
+    if (finished) return;
+    finished = true;
+    el.classList.add("closing");
+    setTimeout(() => el.remove(), 250);
+  };
+
+  const timerId = setTimeout(dismiss, durationMs);
+
+  if (btn) {
+    btn.addEventListener("click", () => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timerId);
+      el.remove();
+      if (typeof onUndo === "function") onUndo();
+      toast("↩️ Restored successfully!", "success");
+    });
+  }
+}
+
+function showConfirmModal({ title = "Confirm Delete", sub = "You can undo this action right after", message = "", confirmLabel = "Delete" } = {}) {
+  const backdrop = $("#confirmModalBackdrop");
+  const titleEl = $("#confirmModalTitle");
+  const subEl = $("#confirmModalSub");
+  const msgEl = $("#confirmModalMessage");
+  const btnAccept = $("#btnAcceptConfirmModal");
+  const btnCancel = $("#btnCancelConfirmModal");
+  const btnClose = $("#btnCloseConfirmModal");
+
+  if (!backdrop || !btnAccept || !btnCancel) {
+    return Promise.resolve(false);
+  }
+
+  if (titleEl) titleEl.textContent = title;
+  if (subEl) subEl.textContent = sub;
+  if (msgEl) msgEl.textContent = message;
+  if (btnAccept) btnAccept.textContent = confirmLabel;
+
+  backdrop.classList.remove("hidden");
+  setTimeout(() => btnAccept.focus(), 20);
+
+  return new Promise((resolve) => {
+    let settled = false;
+
+    const cleanup = (result) => {
+      if (settled) return;
+      settled = true;
+      backdrop.classList.add("hidden");
+      btnAccept.removeEventListener("click", onAccept);
+      btnCancel.removeEventListener("click", onCancel);
+      if (btnClose) btnClose.removeEventListener("click", onCancel);
+      backdrop.removeEventListener("click", onBackdrop);
+      document.removeEventListener("keydown", onKeydown, true);
+      resolve(result);
+    };
+
+    const onAccept = () => cleanup(true);
+    const onCancel = () => cleanup(false);
+    const onBackdrop = (e) => {
+      if (e.target === backdrop) cleanup(false);
+    };
+    const onKeydown = (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        cleanup(false);
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        e.stopPropagation();
+        if (document.activeElement === btnCancel || document.activeElement === btnClose) {
+          cleanup(false);
+        } else {
+          cleanup(true);
+        }
+      }
+    };
+
+    btnAccept.addEventListener("click", onAccept);
+    btnCancel.addEventListener("click", onCancel);
+    if (btnClose) btnClose.addEventListener("click", onCancel);
+    backdrop.addEventListener("click", onBackdrop);
+    document.addEventListener("keydown", onKeydown, true);
+  });
 }
 
 // ══════════════════════════════════════════════════════════════
