@@ -1,11 +1,12 @@
 {
-  "version": "1.4.11",
-  "build": 43,
+  "version": "1.5.0",
+  "build": 44,
   "date": "2026-11-24",
-  "notes": "✨ VocabMaster v1.4.11: Centered 3D speaker vertically with wave lines, widened soundwaves to avoid occlusion, and suppressed redundant arena header.",
+  "notes": "✨ VocabMaster v1.5.0 - Unified Cyber Practice Arena: Complete aesthetic upgrade for Multiple Choice, Translate (AR -> EN), Audio Spelling (3D Acoustic Studio), and Speed Match Game. Harmonized container dimensions (fixed max-width & 520px min-height), eliminated layout jumping, added smooth mode cross-fades, and sleek studio top bars across all 4 modes.",
   "changed_files": [
     "index.html",
     "css/style.css",
+    "js/app.js",
     "version.json"
   ],
   "update_exe": true,
