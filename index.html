@@ -2,18 +2,20 @@
 <html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>VocabMaster</title>
-  <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png?v=20" />
-  <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png?v=20" />
-  <link rel="icon" type="image/png" sizes="64x64" href="assets/icons/favicon.png?v=20" />
-  <link rel="manifest" href="manifest.json?v=20" />
-  <meta name="theme-color" content="#00d4ff" />
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png?v=21" />
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png?v=21" />
+  <link rel="icon" type="image/png" sizes="64x64" href="assets/icons/favicon.png?v=21" />
+  <link rel="manifest" href="manifest.json?v=21" />
+  <meta name="theme-color" content="#030712" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="VocabMaster" />
-  <link rel="apple-touch-icon" href="assets/icons/logo.png?v=20" />
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="apple-touch-icon" sizes="192x192" href="assets/icons/icon-192.png?v=21" />
+  <link rel="apple-touch-icon" sizes="512x512" href="assets/icons/logo.png?v=21" />
+  <link rel="stylesheet" href="css/style.css?v=21" />
 </head>
 <body>
 
@@ -128,10 +130,18 @@
     </div>
 
     <div class="sidebar-footer">
+      <button class="sidebar-pwa-install-btn hidden" id="btnPwaInstall" title="Install VocabMaster App">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span class="nav-label">Install App</span>
+      </button>
       <div class="sidebar-footer-row">
         <div class="sidebar-version-badge" id="sidebarVersionBadge">
           <span class="version-dot"></span>
-          <span id="sidebarVersionPill">v1.5.1</span>
+          <span id="sidebarVersionPill">v1.5.2</span>
         </div>
         <button class="sidebar-update-icon-btn" id="btnSidebarCheckUpdate" title="Check for updates" data-tooltip="Check Updates">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1290,6 +1300,57 @@
     <span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> Rate</span>
   </div>
 
-  <script src="js/app.js"></script>
+  <!-- ══════════════════ MOBILE BOTTOM NAVIGATION BAR ══════════════════ -->
+  <nav id="mobileBottomNav" class="mobile-bottom-nav" aria-label="Mobile Navigation">
+    <button type="button" class="mobile-nav-btn active" data-mobile-mode="flashcards" aria-label="Flashcards">
+      <span class="mobile-nav-icon flashcards-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2.5" y="6.5" width="12" height="15" rx="2.5"></rect>
+          <path d="M7 3.5h11A2.5 2.5 0 0 1 20.5 6v13"></path>
+        </svg>
+      </span>
+      <span class="mobile-nav-label">Cards</span>
+    </button>
+    <button type="button" class="mobile-nav-btn" data-mobile-mode="quiz" aria-label="Practice Arena">
+      <span class="mobile-nav-icon arena-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"></polyline>
+          <line x1="13" y1="19" x2="19" y2="13"></line>
+          <line x1="16" y1="16" x2="20" y2="20"></line>
+          <polyline points="14.5 6.5 18 3 21 3 21 6 17.5 9.5"></polyline>
+        </svg>
+      </span>
+      <span class="mobile-nav-label">Arena</span>
+    </button>
+    <button type="button" class="mobile-nav-btn" data-mobile-mode="context" aria-label="Context Builder">
+      <span class="mobile-nav-icon context-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2L12 3z"></path>
+        </svg>
+      </span>
+      <span class="mobile-nav-label">Context</span>
+    </button>
+    <button type="button" class="mobile-nav-btn" data-mobile-mode="manage" aria-label="Word Manager">
+      <span class="mobile-nav-icon manager-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+        </svg>
+      </span>
+      <span class="mobile-nav-label">Manage</span>
+    </button>
+    <button type="button" class="mobile-nav-btn" id="btnMobileBottomDecks" aria-label="Decks and Folders">
+      <span class="mobile-nav-icon all-units-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+        </svg>
+      </span>
+      <span class="mobile-nav-label">Decks</span>
+    </button>
+  </nav>
+
+  <script src="js/app.js?v=21"></script>
 </body>
 </html>
