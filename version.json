@@ -1,13 +1,20 @@
 {
-  "version": "1.5.0",
-  "build": 44,
+  "version": "1.5.1",
+  "build": 45,
   "date": "2026-11-24",
-  "notes": "✨ VocabMaster v1.5.0 - Unified Cyber Practice Arena: Complete aesthetic upgrade for Multiple Choice, Translate (AR -> EN), Audio Spelling (3D Acoustic Studio), and Speed Match Game. Harmonized container dimensions (fixed max-width & 520px min-height), eliminated layout jumping, added smooth mode cross-fades, and sleek studio top bars across all 4 modes.",
+  "notes": "✨ VocabMaster v1.5.1 - Ultra-Refined Transparent Branding: Crystal-clear 100% alpha transparency for the taskbar logo and shortcuts, eliminating solid black background. Enriched golden V and crown highlights with vibrant neon cyan book contours.",
   "changed_files": [
     "index.html",
-    "css/style.css",
-    "js/app.js",
-    "version.json"
+    "version.json",
+    "app.ico",
+    "assets/icons/app.ico",
+    "assets/icons/logo.png",
+    "assets/icons/avatar-crest.png",
+    "assets/icons/favicon.png",
+    "assets/icons/favicon-32.png",
+    "assets/icons/favicon-16.png",
+    "README.md",
+    "VocabMaster.exe"
   ],
   "update_exe": true,
   "files": [
@@ -23,6 +30,7 @@
     "assets/icons/favicon-32.png",
     "assets/icons/favicon-16.png",
     "assets/icons/speaker-3d.png",
+    "README.md",
     "VocabMaster.exe"
   ]
 }
