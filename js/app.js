@@ -3991,16 +3991,15 @@ function initCyberLampFocusMode() {
   function toggleLamp() {
     lamp.classList.remove("pulling");
     lamp.classList.remove("spring-back");
-    // Trigger reflow to restart spring-back animation reliably
-    void lamp.offsetWidth;
-    lamp.classList.add("spring-back");
+    requestAnimationFrame(() => {
+      lamp.classList.add("spring-back");
+      const nextState = currentState === "on" ? "off" : "on";
+      applyLampState(nextState);
+    });
 
     setTimeout(() => {
       lamp.classList.remove("spring-back");
-    }, 700);
-
-    const nextState = currentState === "on" ? "off" : "on";
-    applyLampState(nextState);
+    }, 500);
   }
 
   // Unified Pointer Events for mouse + touch pull-cord physics (prevents mobile double-toggle)
@@ -4021,10 +4020,10 @@ function initCyberLampFocusMode() {
 
   lamp.addEventListener("pointermove", (e) => {
     if (!isPulling || e.pointerId !== activePointerId || !hanger) return;
-    const dy = Math.max(0, Math.min(26, e.clientY - pullStartY));
+    const dy = Math.max(0, Math.min(24, e.clientY - pullStartY));
     if (dy > 4) {
       hanger.style.transition = "none";
-      hanger.style.transform = `translateY(${Math.max(14, dy)}px)`;
+      hanger.style.transform = `translate3d(0, ${Math.max(14, dy)}px, 0)`;
     }
   });
 
