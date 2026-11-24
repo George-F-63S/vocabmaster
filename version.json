@@ -1,12 +1,11 @@
 {
-  "version": "1.4.10",
-  "build": 42,
+  "version": "1.4.11",
+  "build": 43,
   "date": "2026-11-24",
-  "notes": "✨ VocabMaster v1.4.10: Reverted to the exact soundwave arcs with speaker dome perfectly centered, and enabled full dash indicator for all words in the active part.",
+  "notes": "✨ VocabMaster v1.4.11: Centered 3D speaker vertically with wave lines, widened soundwaves to avoid occlusion, and suppressed redundant arena header.",
   "changed_files": [
     "index.html",
     "css/style.css",
-    "js/app.js",
     "version.json"
   ],
   "update_exe": true,
