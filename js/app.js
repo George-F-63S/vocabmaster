@@ -1324,6 +1324,8 @@ function renderContextBuilder() {
         Card ${idx + 1} (${isMatched ? "Completed" : "Pending"})
       </div>
       <div class="context-word-chip ${isMatched ? "matched" : ""}">
+        <span class="cyber-notch top-notch"></span>
+        <span class="cyber-notch bottom-notch"></span>
         ${isMatched ? '<span class="card-check-badge">✓</span>' : ""}
         <div class="context-chip-en">${escapeHTML(w.word)}</div>
         <div class="context-chip-ar">${escapeHTML(w.meaning)}</div>
@@ -2812,8 +2814,8 @@ const GITHUB_REPO = "George-F-63S/vocabmaster";
 const GITHUB_RAW_BASE = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/`;
 const UPDATER_PORT = 49555;
 const UPDATER_BASE = `http://127.0.0.1:${UPDATER_PORT}/api`;
-let appCurrentVersion = "1.4.5";
-let appCurrentBuild = 37;
+let appCurrentVersion = "1.4.6";
+let appCurrentBuild = 38;
 
 function startUpdaterHeartbeat() {
   // Ping local C# launcher every 15 seconds to keep it informed the app is open
