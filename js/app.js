@@ -1208,6 +1208,14 @@ function playSpeech(text, rate = 0.88) {
   const utter = new SpeechSynthesisUtterance(text);
   utter.lang = 'en-US';
   utter.rate = rate;
+
+  const speakerStage = document.getElementById("speakerStage");
+  if (speakerStage) {
+    speakerStage.classList.add("is-speaking");
+    utter.onend = () => speakerStage.classList.remove("is-speaking");
+    utter.onerror = () => speakerStage.classList.remove("is-speaking");
+  }
+
   window.speechSynthesis.speak(utter);
 }
 
@@ -1664,22 +1672,65 @@ function provideTranslateHint() {
   }
 }
 
-// ── 5C. Audio Spelling ──
+// ── 5C. Audio Spelling (Cyber-Acoustic 3D Studio) ──
+function renderSpellingProgress() {
+  const track = $("#spellingDotTrack");
+  const countLabel = $("#spellingIndexLabel");
+  const streakCount = $("#spellingStreakCount");
+  const accuracyVal = $("#spellingAccuracyVal");
+
+  if (countLabel) {
+    const currentQ = spellList.length > 0 ? Math.min(spellIndex + 1, spellList.length) : 0;
+    countLabel.textContent = `${currentQ} of ${spellList.length}`;
+  }
+
+  if (streakCount) {
+    streakCount.textContent = arenaStreak;
+  }
+
+  if (accuracyVal) {
+    const acc = spellTotal === 0 ? 100 : Math.round((spellScore / spellTotal) * 100);
+    accuracyVal.textContent = `${acc}%`;
+  }
+
+  if (track && spellList.length > 0) {
+    const totalDots = Math.min(spellList.length, 12);
+    let html = "";
+    for (let i = 0; i < totalDots; i++) {
+      let cls = "spelling-dot";
+      if (i < spellIndex) cls += " completed";
+      else if (i === spellIndex) cls += " active";
+      html += `<span class="${cls}"></span>`;
+    }
+    track.innerHTML = html;
+  }
+}
+
 function startSpellingQuiz() {
   const words = getActiveWords();
+  const inputWrap = document.querySelector(".spelling-input-wrap");
+  const shortcuts = document.querySelector(".spelling-shortcut-hints");
+  const stage = $("#speakerStage");
+
   if (words.length === 0) {
     $("#spellingHint").textContent = state.activeUnitId === "mistakes"
       ? "🎉 No mistakes recorded! Great job!"
       : "Add words to this deck first!";
-    $("#spellingInput").style.display = "none";
-    $("#btnCheckSpelling").style.display = "none";
-    $("#btnSpellListen").style.display = "none";
+    if (inputWrap) inputWrap.style.display = "none";
+    if (shortcuts) shortcuts.style.display = "none";
+    if (stage) stage.style.display = "none";
     $("#btnNextSpelling").style.display = "none";
     $("#spellingFeedback").textContent = "";
     $("#spellingScore").textContent = "0 / 0 Correct";
+    renderSpellingProgress();
     updateArenaHeader("Waiting for words");
     return;
   }
+
+  if (inputWrap) inputWrap.style.display = "";
+  if (shortcuts) shortcuts.style.display = "";
+  if (stage) stage.style.display = "";
+
   spellList = shuffle([...words]);
   spellIndex = 0;
   spellScore = 0;
@@ -1689,21 +1740,26 @@ function startSpellingQuiz() {
 }
 
 function showSpellingQuestion() {
+  const inputWrap = document.querySelector(".spelling-input-wrap");
+  const shortcuts = document.querySelector(".spelling-shortcut-hints");
+  const stage = $("#speakerStage");
+
   if (spellIndex >= spellList.length) {
     $("#spellingHint").textContent = `🎉 Spelling Test Complete! ${spellScore} / ${spellTotal} Correct`;
-    $("#spellingInput").style.display = "none";
-    $("#btnCheckSpelling").style.display = "none";
-    $("#btnSpellListen").style.display = "none";
+    if (inputWrap) inputWrap.style.display = "none";
+    if (shortcuts) shortcuts.style.display = "none";
+    if (stage) stage.style.display = "none";
     $("#btnNextSpelling").style.display = "none";
     $("#spellingFeedback").textContent = "";
+    renderSpellingProgress();
     updateArenaHeader("Round finished");
     return;
   }
 
   spellAnswered = false;
-  $("#spellingInput").style.display = "";
-  $("#btnCheckSpelling").style.display = "";
-  $("#btnSpellListen").style.display = "";
+  if (inputWrap) inputWrap.style.display = "";
+  if (shortcuts) shortcuts.style.display = "";
+  if (stage) stage.style.display = "";
   $("#btnNextSpelling").style.display = "none";
   $("#spellingFeedback").textContent = "";
   $("#spellingFeedback").className = "spelling-feedback";
@@ -1713,8 +1769,9 @@ function showSpellingQuestion() {
   input.focus();
 
   const current = spellList[spellIndex];
-  $("#spellingHint").textContent = `Meaning: ${current.meaning}`;
+  $("#spellingHint").textContent = current.meaning;
   $("#spellingScore").textContent = `${spellScore} / ${spellTotal} Correct`;
+  renderSpellingProgress();
   updateArenaHeader(`Question ${spellIndex + 1} of ${spellList.length}`);
 
   playSpeech(current.word);
@@ -1740,6 +1797,7 @@ function checkSpellingAnswer() {
 
   handleQuizAttempt(current, isCorrect);
   $("#spellingScore").textContent = `${spellScore} / ${spellTotal} Correct`;
+  renderSpellingProgress();
   $("#btnNextSpelling").style.display = "inline-block";
 }
 
@@ -2599,6 +2657,10 @@ function bindAllEvents() {
       $("#matchArea").classList.add("hidden");
 
       $(`#${activeQuizType}Area`).classList.remove("hidden");
+      const arenaView = $("#arenaView");
+      if (arenaView) {
+        arenaView.classList.toggle("spelling-mode-active", activeQuizType === "spelling");
+      }
       startActiveQuiz();
     });
   });
@@ -2623,16 +2685,34 @@ function bindAllEvents() {
   $("#btnNextTranslate").addEventListener("click", () => { transIndex++; showTranslateQuestion(); });
   $("#btnResetTranslate").addEventListener("click", startTranslateQuiz);
 
-  // Spelling
+  // Spelling (Cyber-Acoustic 3D Studio)
   $("#btnSpellListen").addEventListener("click", () => {
     if (spellList[spellIndex]) playSpeech(spellList[spellIndex].word);
   });
+  const btnNorm = $("#btnListenNormal");
+  if (btnNorm) btnNorm.addEventListener("click", () => {
+    if (spellList[spellIndex]) playSpeech(spellList[spellIndex].word, 0.9);
+  });
+  const btnSlow = $("#btnListenSlow");
+  if (btnSlow) btnSlow.addEventListener("click", () => {
+    if (spellList[spellIndex]) playSpeech(spellList[spellIndex].word, 0.6);
+  });
+  const spkStage = $("#speakerStage");
+  if (spkStage) {
+    spkStage.addEventListener("click", (e) => {
+      if (e.target.closest("#btnSpellListen")) return;
+      if (spellList[spellIndex]) playSpeech(spellList[spellIndex].word, 0.9);
+    });
+  }
   $("#btnCheckSpelling").addEventListener("click", checkSpellingAnswer);
   $("#spellingInput").addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
       if (!spellAnswered) checkSpellingAnswer();
       else { spellIndex++; showSpellingQuestion(); }
+    } else if (e.code === "Space" && e.ctrlKey) {
+      e.preventDefault();
+      if (spellList[spellIndex]) playSpeech(spellList[spellIndex].word, 0.9);
     }
   });
   $("#btnNextSpelling").addEventListener("click", () => { spellIndex++; showSpellingQuestion(); });
@@ -2757,10 +2837,27 @@ function bindAllEvents() {
   // Keyboard shortcuts (Seamless English & Arabic support via physical e.code & Arabic fallbacks)
   document.addEventListener("keydown", (e) => {
     if (["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName) || e.target.isContentEditable) return;
-    if (currentMode !== "flashcards") return;
 
     const code = e.code;
     const key = e.key;
+
+    // Audio Spelling Mode Shortcuts
+    if (currentMode === "arena" && activeQuizType === "spelling") {
+      // Replay normal audio: Space, KeyR, 'r', 'R', or 'ق'
+      if (code === "Space" || key === " " || key === "Spacebar" || code === "KeyR" || key === "r" || key === "R" || key === "ق") {
+        e.preventDefault();
+        if (spellList[spellIndex]) playSpeech(spellList[spellIndex].word, 0.9);
+        return;
+      }
+      // Slow audio: KeyS, 's', 'S', or 'س'
+      if (code === "KeyS" || key === "s" || key === "S" || key === "س") {
+        e.preventDefault();
+        if (spellList[spellIndex]) playSpeech(spellList[spellIndex].word, 0.6);
+        return;
+      }
+    }
+
+    if (currentMode !== "flashcards") return;
 
     // Flip card (Space)
     if (code === "Space" || key === " " || key === "Spacebar") {
