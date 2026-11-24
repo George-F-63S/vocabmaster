@@ -1475,7 +1475,46 @@ function startActiveQuiz() {
   else if (activeQuizType === "match") startMatchGame();
 }
 
-// ── 5A. Multiple Choice ──
+// ── 5A. Multiple Choice (Cyber-Choice Studio) ──
+function renderMcqProgress() {
+  const track = $("#mcqDotTrack");
+  const countLabel = $("#mcqIndexLabel");
+  const streakCount = $("#mcqStreakCount");
+  const accuracyVal = $("#mcqAccuracyVal");
+
+  if (countLabel) {
+    const currentQ = mcqList.length > 0 ? Math.min(mcqIndex + 1, mcqList.length) : 0;
+    countLabel.textContent = `${currentQ} of ${mcqList.length}`;
+  }
+
+  if (streakCount) {
+    streakCount.textContent = arenaStreak;
+  }
+
+  if (accuracyVal) {
+    const acc = mcqTotal === 0 ? 100 : Math.round((mcqScore / mcqTotal) * 100);
+    accuracyVal.textContent = `${acc}%`;
+  }
+
+  if (track && mcqList.length > 0) {
+    const totalSegments = Math.min(Math.max(mcqList.length, 1), 8);
+    const progressRatio = mcqIndex / mcqList.length;
+    const activeSegmentIndex = Math.min(Math.floor(progressRatio * totalSegments), totalSegments - 1);
+
+    let html = "";
+    for (let i = 0; i < totalSegments; i++) {
+      if (i < activeSegmentIndex) {
+        html += `<span class="spelling-dot completed"></span>`;
+      } else if (i === activeSegmentIndex) {
+        html += `<span class="spelling-dot active"></span>`;
+      } else {
+        html += `<span class="spelling-dot"></span>`;
+      }
+    }
+    track.innerHTML = html;
+  }
+}
+
 function startMcqQuiz() {
   const words = getActiveWords();
   if (words.length < 2) {
@@ -1486,6 +1525,7 @@ function startMcqQuiz() {
     $("#mcqOptions").innerHTML = "";
     $("#btnNextMcq").style.display = "none";
     $("#mcqScore").textContent = "0 / 0 Correct";
+    renderMcqProgress();
     updateArenaHeader("Waiting for words");
     return;
   }
@@ -1503,6 +1543,7 @@ function showMcqQuestion() {
     $("#mcqQuestion").textContent = `🎉 Round Complete! ${mcqScore} / ${mcqTotal} Correct`;
     $("#mcqOptions").innerHTML = "";
     $("#btnNextMcq").style.display = "none";
+    renderMcqProgress();
     updateArenaHeader("Round finished");
     return;
   }
@@ -1513,6 +1554,7 @@ function showMcqQuestion() {
 
   $("#mcqWordType").textContent = (current.type || "Word").toUpperCase();
   $("#mcqQuestion").textContent = current.meaning;
+  renderMcqProgress();
   updateArenaHeader(`Question ${mcqIndex + 1} of ${mcqList.length}`);
 
   const pool = getActiveWords().length >= 4 ? getActiveWords() : getAllWordsWithUnit();
@@ -1555,30 +1597,74 @@ function handleMcqSelection(btn, chosen, current) {
   }
 
   handleQuizAttempt(current, isCorrect);
+  renderMcqProgress();
   $("#mcqScore").textContent = `${mcqScore} / ${mcqTotal} Correct`;
   $("#btnNextMcq").style.display = "inline-block";
 }
 
-// ── 5B. Translate (AR ➔ EN) ──
+// ── 5B. Translate (AR ➔ EN) (Cyber-Lexicon Studio) ──
+function renderTranslateProgress() {
+  const track = $("#translateDotTrack");
+  const countLabel = $("#translateIndexLabel");
+  const streakCount = $("#translateStreakCount");
+  const accuracyVal = $("#translateAccuracyVal");
+
+  if (countLabel) {
+    const currentQ = transList.length > 0 ? Math.min(transIndex + 1, transList.length) : 0;
+    countLabel.textContent = `${currentQ} of ${transList.length}`;
+  }
+
+  if (streakCount) {
+    streakCount.textContent = arenaStreak;
+  }
+
+  if (accuracyVal) {
+    const acc = transTotal === 0 ? 100 : Math.round((transScore / transTotal) * 100);
+    accuracyVal.textContent = `${acc}%`;
+  }
+
+  if (track && transList.length > 0) {
+    const totalSegments = Math.min(Math.max(transList.length, 1), 8);
+    const progressRatio = transIndex / transList.length;
+    const activeSegmentIndex = Math.min(Math.floor(progressRatio * totalSegments), totalSegments - 1);
+
+    let html = "";
+    for (let i = 0; i < totalSegments; i++) {
+      let cls = "spelling-dot";
+      if (i < activeSegmentIndex) cls += " completed";
+      else if (i === activeSegmentIndex) cls += " active";
+      html += `<span class="${cls}"></span>`;
+    }
+    track.innerHTML = html;
+  }
+}
+
 function startTranslateQuiz() {
   const words = getActiveWords();
+  const inputWrap = document.querySelector(".translate-input-wrap");
+  const hintStage = document.querySelector(".translate-hint-stage");
+  const hintTiles = $("#translateHintTiles");
+
   if (words.length === 0) {
     $("#translateType").textContent = "INFO";
     $("#translateQuestion").textContent = state.activeUnitId === "mistakes"
       ? "🎉 No mistakes recorded! Great job!"
       : "Add words to this deck first!";
-    $("#translateInput").style.display = "none";
-    $("#btnCheckTranslate").style.display = "none";
-    $("#btnTranslateHint").style.display = "none";
-    $("#btnTranslateListen").classList.add("hide");
+    if (inputWrap) inputWrap.style.display = "none";
+    if (hintStage) hintStage.style.display = "none";
+    if (hintTiles) hintTiles.classList.add("hidden");
     $("#btnNextTranslate").style.display = "none";
-    $("#translateHintDisplay").classList.add("hidden");
     $("#translateFeedback").textContent = "";
     $("#translateExampleFeedback").textContent = "";
     $("#translateScore").textContent = "0 / 0 Correct";
+    renderTranslateProgress();
     updateArenaHeader("Waiting for words");
     return;
   }
+
+  if (inputWrap) inputWrap.style.display = "";
+  if (hintStage) hintStage.style.display = "";
+
   transList = shuffle([...words]);
   transIndex = 0;
   transScore = 0;
@@ -1588,17 +1674,20 @@ function startTranslateQuiz() {
 }
 
 function showTranslateQuestion() {
+  const inputWrap = document.querySelector(".translate-input-wrap");
+  const hintStage = document.querySelector(".translate-hint-stage");
+  const hintTiles = $("#translateHintTiles");
+
   if (transIndex >= transList.length) {
     $("#translateType").textContent = "DONE";
     $("#translateQuestion").textContent = `🎉 Round Complete! ${transScore} / ${transTotal} Correct`;
-    $("#translateInput").style.display = "none";
-    $("#btnCheckTranslate").style.display = "none";
-    $("#btnTranslateHint").style.display = "none";
-    $("#btnTranslateListen").classList.add("hide");
+    if (inputWrap) inputWrap.style.display = "none";
+    if (hintStage) hintStage.style.display = "none";
+    if (hintTiles) hintTiles.classList.add("hidden");
     $("#btnNextTranslate").style.display = "none";
-    $("#translateHintDisplay").classList.add("hidden");
     $("#translateFeedback").textContent = "";
     $("#translateExampleFeedback").textContent = "";
+    renderTranslateProgress();
     updateArenaHeader("Round finished");
     return;
   }
@@ -1606,10 +1695,15 @@ function showTranslateQuestion() {
   transAnswered = false;
   transHintUsed = false;
 
+  if (inputWrap) inputWrap.style.display = "";
+  if (hintStage) hintStage.style.display = "";
+  if (hintTiles) {
+    hintTiles.classList.add("hidden");
+    hintTiles.innerHTML = "";
+  }
   $("#translateInput").style.display = "";
   $("#btnCheckTranslate").style.display = "";
   $("#btnTranslateHint").style.display = "";
-  $("#btnTranslateListen").classList.add("hide");
   $("#btnNextTranslate").style.display = "none";
   $("#translateHintDisplay").classList.add("hidden");
   $("#translateFeedback").textContent = "";
@@ -1624,6 +1718,7 @@ function showTranslateQuestion() {
   $("#translateType").textContent = (current.type || "Word").toUpperCase();
   $("#translateQuestion").textContent = current.meaning;
   $("#translateScore").textContent = `${transScore} / ${transTotal} Correct`;
+  renderTranslateProgress();
   updateArenaHeader(`Question ${transIndex + 1} of ${transList.length}`);
 }
 
@@ -1635,8 +1730,6 @@ function checkTranslateAnswer() {
   const current = transList[transIndex];
   const userAns = $("#translateInput").value.trim().toLowerCase();
   const isCorrect = userAns === current.word.trim().toLowerCase();
-
-  playSpeech(current.word);
 
   if (isCorrect) {
     transScore++;
@@ -1652,18 +1745,36 @@ function checkTranslateAnswer() {
   }
 
   handleQuizAttempt(current, isCorrect);
-  $("#btnTranslateListen").classList.remove("hide");
   $("#translateScore").textContent = `${transScore} / ${transTotal} Correct`;
+  renderTranslateProgress();
   $("#btnNextTranslate").style.display = "inline-block";
 }
 
 function provideTranslateHint() {
   if (transAnswered || transIndex >= transList.length) return;
   const w = transList[transIndex].word.trim();
-  const hint = w.slice(0, Math.min(2, w.length)) + "_".repeat(Math.max(1, w.length - 2)) + ` (${w.length} letters)`;
+  const tilesWrap = $("#translateHintTiles");
+
+  if (tilesWrap) {
+    const firstTwo = w.slice(0, Math.min(2, w.length)).toLowerCase();
+    let tilesHtml = "";
+    for (let i = 0; i < w.length; i++) {
+      if (i < Math.min(2, w.length)) {
+        tilesHtml += `<span class="hint-tile revealed">${escapeHTML(firstTwo[i])}</span>`;
+      } else {
+        tilesHtml += `<span class="hint-tile">_</span>`;
+      }
+    }
+    tilesHtml += `<span style="font-size:0.8rem;color:#fde68a;margin-left:6px;font-weight:700;">(${w.length} letters)</span>`;
+    tilesWrap.innerHTML = tilesHtml;
+    tilesWrap.classList.remove("hidden");
+  }
+
   const el = $("#translateHintDisplay");
-  el.textContent = `Hint: ${hint}`;
-  el.classList.remove("hidden");
+  if (el) {
+    const hint = w.slice(0, Math.min(2, w.length)) + "_".repeat(Math.max(1, w.length - 2)) + ` (${w.length} letters)`;
+    el.textContent = `Hint: ${hint}`;
+  }
 
   if (!transHintUsed) {
     transHintUsed = true;
@@ -1694,11 +1805,15 @@ function renderSpellingProgress() {
   }
 
   if (track && spellList.length > 0) {
+    const totalSegments = Math.min(Math.max(spellList.length, 1), 8);
+    const progressRatio = spellIndex / spellList.length;
+    const activeSegmentIndex = Math.min(Math.floor(progressRatio * totalSegments), totalSegments - 1);
+
     let html = "";
-    for (let i = 0; i < spellList.length; i++) {
+    for (let i = 0; i < totalSegments; i++) {
       let cls = "spelling-dot";
-      if (i < spellIndex) cls += " completed";
-      else if (i === spellIndex) cls += " active";
+      if (i < activeSegmentIndex) cls += " completed";
+      else if (i === activeSegmentIndex) cls += " active";
       html += `<span class="${cls}"></span>`;
     }
     track.innerHTML = html;
@@ -1800,7 +1915,23 @@ function checkSpellingAnswer() {
   $("#btnNextSpelling").style.display = "inline-block";
 }
 
-// ── 5D. Speed Match Game (6 Pairs = 12 Tiles) ──
+// ── 5D. Speed Match Game (Cyber-Grid Studio) ──
+function renderMatchProgress() {
+  const pairsText = $("#matchPairsText");
+  const streakCount = $("#matchStreakCount");
+  const scoreVal = $("#matchScoreVal");
+
+  if (pairsText) {
+    pairsText.textContent = `${matchRemainingPairs} pairs left`;
+  }
+  if (streakCount) {
+    streakCount.textContent = arenaStreak;
+  }
+  if (scoreVal) {
+    scoreVal.textContent = arenaScore;
+  }
+}
+
 function startMatchGame() {
   const words = getActiveWords();
   const grid = $("#matchGridBox");
@@ -1812,12 +1943,15 @@ function startMatchGame() {
     grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--text-secondary);padding:36px;">${
       state.activeUnitId === "mistakes" ? "🎉 No mistakes recorded! Great job!" : "Add words to play Speed Match!"
     }</div>`;
+    matchRemainingPairs = 0;
+    renderMatchProgress();
     updateArenaHeader("Waiting for words");
     return;
   }
 
   const subset = shuffle([...words]).slice(0, 6);
   matchRemainingPairs = subset.length;
+  renderMatchProgress();
   updateArenaHeader(`${matchRemainingPairs} pairs left`);
 
   const tiles = [];
@@ -1864,6 +1998,7 @@ function handleMatchClick(btn, tile) {
     first.btn.classList.add("matched");
     handleQuizAttempt(tile.wordObj, true);
     matchRemainingPairs--;
+    renderMatchProgress();
     updateArenaHeader(`${matchRemainingPairs} pairs left`);
 
     if (matchRemainingPairs === 0) {
@@ -1877,6 +2012,7 @@ function handleMatchClick(btn, tile) {
 
     const targetWordObj = tile.lang === "en" ? tile.wordObj : first.tile.wordObj;
     handleQuizAttempt(targetWordObj, false);
+    renderMatchProgress();
 
     setTimeout(() => {
       btn.classList.remove("wrong-flash");
@@ -2671,9 +2807,12 @@ function bindAllEvents() {
   // Translate
   $("#btnCheckTranslate").addEventListener("click", checkTranslateAnswer);
   $("#btnTranslateHint").addEventListener("click", provideTranslateHint);
-  $("#btnTranslateListen").addEventListener("click", () => {
-    if (transList[transIndex]) playSpeech(transList[transIndex].word);
-  });
+  const btnTransListen = $("#btnTranslateListen");
+  if (btnTransListen) {
+    btnTransListen.addEventListener("click", () => {
+      if (transList[transIndex]) playSpeech(transList[transIndex].word);
+    });
+  }
   $("#translateInput").addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -2910,8 +3049,8 @@ const GITHUB_REPO = "George-F-63S/vocabmaster";
 const GITHUB_RAW_BASE = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/`;
 const UPDATER_PORT = 49555;
 const UPDATER_BASE = `http://127.0.0.1:${UPDATER_PORT}/api`;
-let appCurrentVersion = "1.4.6";
-let appCurrentBuild = 38;
+let appCurrentVersion = "1.5.0";
+let appCurrentBuild = 44;
 
 function startUpdaterHeartbeat() {
   // Ping local C# launcher every 15 seconds to keep it informed the app is open
