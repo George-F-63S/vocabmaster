@@ -1694,9 +1694,8 @@ function renderSpellingProgress() {
   }
 
   if (track && spellList.length > 0) {
-    const totalDots = Math.min(spellList.length, 12);
     let html = "";
-    for (let i = 0; i < totalDots; i++) {
+    for (let i = 0; i < spellList.length; i++) {
       let cls = "spelling-dot";
       if (i < spellIndex) cls += " completed";
       else if (i === spellIndex) cls += " active";
