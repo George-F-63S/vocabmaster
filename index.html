@@ -979,6 +979,29 @@
     </div>
   </div>
 
+  <!-- ══════════════════ CUSTOM CYBERPUNK CONFIRM DELETE MODAL ══════════════════ -->
+  <div class="modal-backdrop hidden" id="confirmModalBackdrop">
+    <div class="modal-dialog confirm-delete-dialog" role="alertdialog" aria-modal="true" aria-labelledby="confirmModalTitle">
+      <div class="modal-dialog-header">
+        <div class="dialog-title-group">
+          <div class="dialog-icon-bubble confirm-danger-bubble">⚠️</div>
+          <div>
+            <h3 id="confirmModalTitle" class="dialog-title">Confirm Delete</h3>
+            <p id="confirmModalSub" class="dialog-sub">You can undo this action right after</p>
+          </div>
+        </div>
+        <button type="button" class="dialog-close-btn" id="btnCloseConfirmModal" aria-label="Close">&times;</button>
+      </div>
+      <div class="dialog-body">
+        <p id="confirmModalMessage" class="confirm-modal-message"></p>
+      </div>
+      <div class="dialog-footer">
+        <button type="button" class="btn-cancel" id="btnCancelConfirmModal">Cancel</button>
+        <button type="button" class="btn-danger-neon" id="btnAcceptConfirmModal">Delete</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ══════════════════ HOW TO USE ME MODAL ══════════════════ -->
   <div class="modal-backdrop hidden" id="guideModalBackdrop">
     <div class="modal-dialog guide-dialog" role="dialog" aria-modal="true" aria-labelledby="guideModalTitle">
