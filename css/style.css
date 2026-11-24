@@ -8017,7 +8017,21 @@ body.lights-out .cyber-lamp-fixture:hover .lamp-bulb {
   .deck-queue-panel {
     height: auto !important;
     min-height: 90px !important;
-    max-height: 220px !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 14px 12px !important;
+  }
+
+  .queue-list {
+    flex: none !important;
+    overflow: visible !important;
+    max-height: none !important;
+    padding: 2px 0 !important;
+    gap: 7px !important;
+  }
+
+  .queue-item {
+    padding: 9px 11px !important;
   }
 
   /* Practice Arena Single-Screen Fit (All 4 Modes) */
