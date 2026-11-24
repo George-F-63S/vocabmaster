@@ -4180,7 +4180,7 @@ select.input-field option { background: var(--bg-secondary); color: #fff; }
 
 .guide-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 400px), 1fr));
   gap: 16px;
 }
 
@@ -7553,6 +7553,28 @@ body.lights-out .cyber-lamp-fixture:hover .lamp-bulb {
     max-width: calc(100vw - 24px);
     max-height: 88dvh;
     border-radius: 18px;
+  }
+
+  .guide-dialog-body {
+    padding: 14px !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  .guide-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .guide-card {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    padding: 14px !important;
+  }
+
+  .guide-card-desc,
+  .guide-card-title-wrap h4 {
+    word-break: break-word;
   }
 
   .data-settings-popover {
