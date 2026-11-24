@@ -1,36 +1,35 @@
 {
-  "version": "1.5.1",
-  "build": 46,
+  "version": "1.5.2",
+  "build": 47,
   "date": "2026-11-24",
-  "notes": "✨ VocabMaster v1.5.1 - Ultra-Refined Transparent Branding: Crystal-clear 100% alpha transparency for the taskbar logo and shortcuts, eliminating solid black background. Enriched golden V and crown highlights with vibrant neon cyan book contours.",
+  "notes": "📱 VocabMaster v1.5.2 - Full Mobile PWA Edition: Sleek mobile bottom navigation & slide-out deck drawer, touch swipe flashcards, responsive Practice Arena & Context Builder, offline Service Worker caching, and iOS/Android standalone installation.",
   "changed_files": [
     "index.html",
+    "css/style.css",
+    "js/app.js",
+    "manifest.json",
+    "sw.js",
     "version.json",
-    "app.ico",
-    "assets/icons/app.ico",
-    "assets/icons/logo.png",
-    "assets/icons/avatar-crest.png",
-    "assets/icons/favicon.png",
-    "assets/icons/favicon-32.png",
-    "assets/icons/favicon-16.png",
-    "README.md",
-    "VocabMaster.exe"
+    "assets/icons/icon-192.png"
   ],
-  "update_exe": true,
+  "update_exe": false,
   "files": [
     "index.html",
     "css/style.css",
     "js/app.js",
+    "manifest.json",
+    "sw.js",
     "version.json",
     "app.ico",
     "assets/icons/app.ico",
     "assets/icons/logo.png",
+    "assets/icons/icon-192.png",
     "assets/icons/avatar-crest.png",
     "assets/icons/favicon.png",
     "assets/icons/favicon-32.png",
     "assets/icons/favicon-16.png",
     "assets/icons/speaker-3d.png",
-    "README.md",
-    "VocabMaster.exe"
+    "assets/icons/speaker_3d_exact.png",
+    "README.md"
   ]
 }
