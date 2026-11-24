@@ -2760,8 +2760,18 @@ function bindAllEvents() {
     btn.addEventListener("click", () => {
       switchAppMode(btn.dataset.mobileMode);
       closeMobileSidebar();
+      const hdr = $(".app-header");
+      if (hdr) hdr.classList.remove("mobile-header-expanded");
     });
   });
+
+  const btnMobileHeaderMore = $("#btnMobileHeaderMore");
+  if (btnMobileHeaderMore) {
+    btnMobileHeaderMore.addEventListener("click", () => {
+      const hdr = $(".app-header");
+      if (hdr) hdr.classList.toggle("mobile-header-expanded");
+    });
+  }
   const btnMobileBottomDecks = $("#btnMobileBottomDecks");
   if (btnMobileBottomDecks && appSidebarEl) {
     btnMobileBottomDecks.addEventListener("click", () => {
