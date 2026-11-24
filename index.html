@@ -131,7 +131,7 @@
       <div class="sidebar-footer-row">
         <div class="sidebar-version-badge" id="sidebarVersionBadge">
           <span class="version-dot"></span>
-          <span id="sidebarVersionPill">v1.0.9</span>
+          <span id="sidebarVersionPill">v1.5.0</span>
         </div>
         <button class="sidebar-update-icon-btn" id="btnSidebarCheckUpdate" title="Check for updates" data-tooltip="Check Updates">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -388,43 +388,97 @@
           </div>
         </div>
 
-        <!-- 1. MCQ Quiz -->
+        <!-- 1. MCQ Quiz (Cyber-Choice Studio) -->
         <div class="quiz-area" id="mcqArea">
-          <div class="quiz-top-actions">
-            <span class="quiz-sub-score" id="mcqScore">0 / 0 Correct</span>
-            <button class="btn-small" id="btnResetMcq">🔄 Restart MCQ</button>
+          <!-- Top Bar: Progress dots, Count, Streak, Accuracy, Restart -->
+          <div class="mcq-header-bar">
+            <div class="mcq-progress-left">
+              <div class="spelling-dot-track" id="mcqDotTrack"></div>
+              <span class="spelling-count-label" id="mcqIndexLabel">1 of 1</span>
+            </div>
+
+            <div class="spelling-streak-pill" id="mcqStreakBadge">
+              <span class="streak-icon">🔥</span> Streak: <span id="mcqStreakCount">0</span>
+            </div>
+
+            <div class="spelling-header-right">
+              <span class="spelling-accuracy-pill" id="mcqAccuracyBadge">Accuracy: <span id="mcqAccuracyVal">100%</span></span>
+              <button class="spelling-restart-btn" id="btnResetMcq" title="Restart MCQ">🔄 Restart</button>
+            </div>
           </div>
-          <div class="quiz-body">
-            <span class="quiz-type-tag" id="mcqWordType">NOUN</span>
-            <h2 class="quiz-question" id="mcqQuestion">—</h2>
-            <p class="quiz-prompt">Select the matching English word:</p>
+
+          <!-- Compatibility score element -->
+          <span class="quiz-sub-score" id="mcqScore" style="display:none;">0 / 0 Correct</span>
+
+          <!-- Main Stage -->
+          <div class="mcq-stage">
+            <!-- Hero Question Portal (Floating Glass Card) -->
+            <div class="mcq-hero-portal" id="mcqPortal">
+              <span class="cyber-tag" id="mcqWordType">NOUN</span>
+              <h2 class="mcq-arabic-word" id="mcqQuestion">—</h2>
+              <p class="mcq-prompt-text">Select the matching English word:</p>
+            </div>
+
+            <!-- Options Grid -->
             <div class="mcq-options" id="mcqOptions"></div>
-            <button class="btn-primary" id="btnNextMcq" style="display:none">Next Question ➜</button>
+            <button class="btn-primary mcq-next-btn" id="btnNextMcq" style="display:none">Next Question ➜</button>
           </div>
         </div>
 
-        <!-- 2. Translation Quiz (AR -> EN) -->
-        <div class="quiz-area hidden" id="translateArea">
-          <div class="quiz-top-actions">
-            <span class="quiz-sub-score" id="translateScore">0 / 0 Correct</span>
-            <button class="btn-small" id="btnResetTranslate">🔄 Restart Translate</button>
+        <!-- 2. Translation Quiz (AR -> EN) (Cyber-Lexicon Studio) -->
+        <div class="quiz-area hidden translate-arena-card" id="translateArea">
+          <!-- Top Bar: Progress dots, Count, Streak, Accuracy, Restart -->
+          <div class="translate-header-bar">
+            <div class="translate-progress-left">
+              <div class="spelling-dot-track" id="translateDotTrack"></div>
+              <span class="spelling-count-label" id="translateIndexLabel">1 of 1</span>
+            </div>
+
+            <div class="spelling-streak-pill" id="translateStreakBadge">
+              <span class="streak-icon">🔥</span> Streak: <span id="translateStreakCount">0</span>
+            </div>
+
+            <div class="spelling-header-right">
+              <span class="spelling-accuracy-pill" id="translateAccuracyBadge">Accuracy: <span id="translateAccuracyVal">100%</span></span>
+              <button class="spelling-restart-btn" id="btnResetTranslate" title="Restart Translate">🔄 Restart</button>
+            </div>
           </div>
-          <div class="quiz-body">
-            <span class="translate-type-badge" id="translateType">NOUN</span>
-            <h2 class="quiz-question translate-ar-word" id="translateQuestion">—</h2>
-            <p class="quiz-prompt">Type the English word that matches this Arabic meaning:</p>
-            <div class="spelling-input-row">
-              <input type="text" id="translateInput" class="input-field quiz-input" placeholder="Type English translation..." autocomplete="off" />
-              <button class="btn-primary" id="btnCheckTranslate">Check Answer ✓</button>
+
+          <!-- Compatibility score element -->
+          <span class="quiz-sub-score" id="translateScore" style="display:none;">0 / 0 Correct</span>
+
+          <!-- Main Stage -->
+          <div class="translate-stage">
+            <!-- Hero Arabic Word Portal (Floating Glass Card) -->
+            <div class="translate-hero-portal" id="translatePortal">
+              <span class="cyber-tag" id="translateType">NOUN</span>
+              <h2 class="translate-arabic-word" id="translateQuestion">—</h2>
+              <p class="translate-prompt-text">Type the English word that matches this Arabic meaning:</p>
             </div>
-            <div class="translate-actions-row">
-              <button class="btn-hint" id="btnTranslateHint" title="Show first letters & word length">💡 Show Hint</button>
-              <button class="btn-listen-after hide" id="btnTranslateListen">🔊 Pronounce Word</button>
+
+            <!-- Hint Clue Tiles -->
+            <div class="translate-hint-stage">
+              <button class="btn-cyber-hint" id="btnTranslateHint" type="button" title="Show first letters & word length">
+                <span>💡</span> Show Hint
+              </button>
             </div>
-            <p class="hint-display hidden" id="translateHintDisplay"></p>
+
+            <!-- Dynamic Letter Clue Tiles Track -->
+            <div class="hint-tiles-track hidden" id="translateHintTiles"></div>
+            <p class="hint-display hidden" id="translateHintDisplay" style="display:none;"></p>
+
+            <!-- Input Row: Glass Input & Saturated Gradient Submit Button -->
+            <div class="translate-input-wrap">
+              <div class="translate-glass-field">
+                <input type="text" id="translateInput" class="translate-translucent-input" placeholder="Type English translation..." autocomplete="off" spellcheck="false" />
+              </div>
+              <button class="btn-spelling-submit btn-translate-submit" id="btnCheckTranslate">Submit Answer</button>
+            </div>
+
+            <!-- Feedback & Example -->
             <p class="spelling-feedback" id="translateFeedback"></p>
-            <p class="feedback-example" id="translateExampleFeedback"></p>
-            <button class="btn-primary" id="btnNextTranslate" style="display:none">Next Question ➜</button>
+            <p class="feedback-example cyber-example" id="translateExampleFeedback"></p>
+            <button class="btn-primary translate-next-btn" id="btnNextTranslate" style="display:none">Next Question ➜</button>
           </div>
         </div>
 
@@ -506,14 +560,31 @@
           </div>
         </div>
 
-        <!-- 4. Speed Match Game -->
+        <!-- 4. Speed Match Game (Cyber-Grid Studio) -->
         <div class="quiz-area hidden" id="matchArea">
-          <div class="quiz-top-actions">
-            <span class="quiz-prompt-inline">Match each English word with its Arabic meaning!</span>
-            <button class="btn-small" id="btnNewMatchBoard">🔄 New Board</button>
+          <!-- Top Bar: Pairs left, Streak, Score, New Board -->
+          <div class="match-header-bar">
+            <div class="match-progress-left">
+              <div class="spelling-streak-pill match-pairs-pill" id="matchPairsBadge">
+                <span class="streak-icon">🧩</span> <span id="matchPairsText">6 pairs left</span>
+              </div>
+            </div>
+
+            <div class="spelling-streak-pill" id="matchStreakBadge">
+              <span class="streak-icon">🔥</span> Streak: <span id="matchStreakCount">0</span>
+            </div>
+
+            <div class="spelling-header-right">
+              <span class="spelling-accuracy-pill" id="matchScoreBadge">Score: <span id="matchScoreVal">0</span></span>
+              <button class="spelling-restart-btn" id="btnNewMatchBoard" title="New Board">🔄 New Board</button>
+            </div>
           </div>
-          <div class="match-grid" id="matchGridBox">
-            <!-- 12 tiles dynamically injected -->
+
+          <div class="match-stage">
+            <p class="match-prompt-sub">Match each English word with its Arabic meaning!</p>
+            <div class="match-grid" id="matchGridBox">
+              <!-- 12 tiles dynamically injected -->
+            </div>
           </div>
         </div>
 
