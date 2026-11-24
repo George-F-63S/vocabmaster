@@ -469,57 +469,9 @@
                 <path class="wave-arc wave-4" d="M 240 28 A 105 105 0 0 1 240 172" stroke-width="1.5" />
               </svg>
 
-              <!-- 3D Metallic Glass Speaker SVG -->
+              <!-- 3D Metallic Glass Speaker (Exact Asset) -->
               <button class="speaker-3d-btn" id="btnSpellListen" type="button" title="Listen [Space]">
-                <svg class="speaker-svg" viewBox="0 0 160 160">
-                  <defs>
-                    <linearGradient id="speakerBaseGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stop-color="#1e293b"/>
-                      <stop offset="50%" stop-color="#0f172a"/>
-                      <stop offset="100%" stop-color="#020617"/>
-                    </linearGradient>
-
-                    <radialGradient id="rimGrad" cx="35%" cy="30%" r="70%">
-                      <stop offset="0%" stop-color="#e0f2fe"/>
-                      <stop offset="25%" stop-color="#7dd3fc"/>
-                      <stop offset="55%" stop-color="#0369a1"/>
-                      <stop offset="85%" stop-color="#0c4a6e"/>
-                      <stop offset="100%" stop-color="#1e293b"/>
-                    </radialGradient>
-
-                    <linearGradient id="innerBezelGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.8"/>
-                      <stop offset="50%" stop-color="#0284c7" stop-opacity="0.3"/>
-                      <stop offset="100%" stop-color="#082f49" stop-opacity="0.9"/>
-                    </linearGradient>
-
-                    <radialGradient id="coneGrad" cx="45%" cy="40%" r="55%">
-                      <stop offset="0%" stop-color="#64748b"/>
-                      <stop offset="35%" stop-color="#334155"/>
-                      <stop offset="70%" stop-color="#1e293b"/>
-                      <stop offset="95%" stop-color="#090d16"/>
-                      <stop offset="100%" stop-color="#020617"/>
-                    </radialGradient>
-
-                    <radialGradient id="domeGrad" cx="38%" cy="35%" r="60%">
-                      <stop offset="0%" stop-color="#ffffff"/>
-                      <stop offset="20%" stop-color="#cbd5e1"/>
-                      <stop offset="55%" stop-color="#475569"/>
-                      <stop offset="85%" stop-color="#1e293b"/>
-                      <stop offset="100%" stop-color="#0f172a"/>
-                    </radialGradient>
-                  </defs>
-
-                  <circle cx="80" cy="80" r="76" fill="url(#speakerBaseGrad)" filter="drop-shadow(0 8px 16px rgba(0,0,0,0.8))"/>
-                  <circle cx="80" cy="80" r="70" fill="url(#rimGrad)" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
-                  <ellipse cx="78" cy="74" rx="66" ry="63" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" stroke-dasharray="70 200" transform="rotate(-30 78 74)"/>
-                  <circle cx="80" cy="80" r="58" fill="none" stroke="url(#innerBezelGrad)" stroke-width="2"/>
-                  <circle cx="80" cy="80" r="54" fill="url(#coneGrad)"/>
-                  <circle cx="80" cy="80" r="42" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
-                  <circle cx="80" cy="80" r="32" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
-                  <circle cx="80" cy="80" r="22" fill="url(#domeGrad)" stroke="rgba(0,0,0,0.5)" stroke-width="1"/>
-                  <ellipse cx="75" cy="74" rx="8" ry="5" fill="rgba(255,255,255,0.75)" transform="rotate(-25 75 74)"/>
-                </svg>
+                <img src="assets/icons/speaker-3d.png" class="speaker-3d-img" alt="Speaker 3D" draggable="false" />
               </button>
             </div>
 
@@ -540,11 +492,10 @@
               <span class="spelling-meaning-text" id="spellingHint">جاري التحميل...</span>
             </div>
 
-            <!-- Input Row: Glass Input with Mic Icon & Saturated Gradient Submit Button -->
+            <!-- Input Row: Glass Input & Saturated Gradient Submit Button -->
             <div class="spelling-input-wrap">
               <div class="spelling-glass-field">
                 <input type="text" id="spellingInput" class="spelling-translucent-input" placeholder="Type English spelling..." autocomplete="off" spellcheck="false" />
-                <span class="spelling-mic-icon" id="spellingMicIcon" title="Type the spelling">🎙️</span>
               </div>
               <button class="btn-spelling-submit" id="btnCheckSpelling">Submit Answer</button>
             </div>
