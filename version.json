@@ -1,8 +1,8 @@
 {
-  "version": "1.4.3",
-  "build": 35,
+  "version": "1.4.4",
+  "build": 36,
   "date": "2026-11-24",
-  "notes": "✨ VocabMaster v1.4.3: Fixed unit persistence across restarts (Dual-Storage SQLite + Disk JSON), resolved dropdown text truncation (Yellow — Needs Focus), and enhanced GitHub auto-updater detection.",
+  "notes": "✨ VocabMaster v1.4.4: Added responsive hover motion & neon glow across Speed Match cards (.match-tile), Show Hint button (.btn-hint), and reset action buttons (.btn-small) in Practice Arena.",
   "changed_files": [
     "index.html",
     "css/style.css",
