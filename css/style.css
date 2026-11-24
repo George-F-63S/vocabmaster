@@ -1059,14 +1059,55 @@ body {
 }
 
 .header-active-title {
-  font-size: 1.05rem;
+  font-size: 1.15rem;
   font-weight: 800;
-  color: #f8fafc;
+  color: #ffffff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 240px;
-  line-height: 1.25;
+  max-width: 260px;
+  line-height: 1.2;
+}
+
+.header-active-part {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 8px;
+  margin-top: 2px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: rgba(56, 189, 248, 0.78);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 260px;
+}
+
+.header-active-part.hidden {
+  display: none !important;
+}
+
+.part-tree-branch {
+  color: rgba(56, 189, 248, 0.55);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.part-tree-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.part-glow-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #00f0ff;
+  box-shadow: 0 0 8px #00f0ff, 0 0 14px rgba(0, 240, 255, 0.7);
+  flex-shrink: 0;
 }
 
 .header-brand {
@@ -7817,9 +7858,22 @@ body.lights-out .cyber-lamp-fixture:hover .lamp-bulb {
   }
 
   .header-active-title {
-    font-size: 0.92rem !important;
+    font-size: 0.98rem !important;
     max-width: 100% !important;
     width: 100% !important;
+    color: #ffffff !important;
+  }
+
+  .header-active-part {
+    padding-left: 6px !important;
+    font-size: 0.72rem !important;
+    margin-top: 1px !important;
+    max-width: 100% !important;
+  }
+
+  .part-glow-dot {
+    width: 6px !important;
+    height: 6px !important;
   }
 
   .header-stats {
