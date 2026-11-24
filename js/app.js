@@ -3767,12 +3767,116 @@ function initCard3DTiltAndMagneticHover() {
   });
 }
 
+/* ══════════════════════════════════════════════════════════════════════
+   INTERACTIVE CYBERPUNK NEON LAMP (FOCUS MODE / LIGHTS OUT)
+   ══════════════════════════════════════════════════════════════════════ */
+function initCyberLampFocusMode() {
+  const lamp = document.getElementById("cyberLampFixture");
+  if (!lamp) return;
+
+  const STORAGE_KEY = "vocabmaster_lamp_state";
+
+  // Persistent focus state ('on' | 'off')
+  let currentState = localStorage.getItem(STORAGE_KEY) || "on";
+  applyLampState(currentState, false);
+
+  function applyLampState(state) {
+    currentState = state;
+    try {
+      localStorage.setItem(STORAGE_KEY, state);
+    } catch (e) {}
+
+    if (state === "off") {
+      document.body.classList.add("lights-out");
+      lamp.classList.add("lamp-off");
+      lamp.setAttribute("aria-label", "Lights are OFF (Focus Mode). Click or press Alt+L to turn ON.");
+      lamp.setAttribute("title", "Turn Lights ON (Alt+L)");
+    } else {
+      document.body.classList.remove("lights-out");
+      lamp.classList.remove("lamp-off");
+      lamp.setAttribute("aria-label", "Lights are ON. Click or press Alt+L to enter Focus Mode.");
+      lamp.setAttribute("title", "Lights Out / Focus Mode (Alt+L)");
+    }
+  }
+
+  function toggleLamp() {
+    lamp.classList.remove("pulling");
+    lamp.classList.remove("spring-back");
+    // Trigger reflow to restart spring-back animation reliably
+    void lamp.offsetWidth;
+    lamp.classList.add("spring-back");
+
+    setTimeout(() => {
+      lamp.classList.remove("spring-back");
+    }, 700);
+
+    const nextState = currentState === "on" ? "off" : "on";
+    applyLampState(nextState);
+  }
+
+  // Pointer interactions for realistic pull cord physics
+  let isPulling = false;
+
+  lamp.addEventListener("mousedown", (e) => {
+    if (e.button !== 0) return;
+    isPulling = true;
+    lamp.classList.remove("spring-back");
+    lamp.classList.add("pulling");
+  });
+
+  window.addEventListener("mouseup", () => {
+    if (isPulling) {
+      isPulling = false;
+      toggleLamp();
+    }
+  });
+
+  lamp.addEventListener("touchstart", (e) => {
+    isPulling = true;
+    lamp.classList.remove("spring-back");
+    lamp.classList.add("pulling");
+  }, { passive: true });
+
+  window.addEventListener("touchend", () => {
+    if (isPulling) {
+      isPulling = false;
+      toggleLamp();
+    }
+  });
+
+  // Keyboard accessibility on lamp element focus
+  lamp.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      lamp.classList.add("pulling");
+      setTimeout(() => {
+        toggleLamp();
+      }, 90);
+    }
+  });
+
+  // Global focus shortcut: Alt+L (or Ctrl+L)
+  document.addEventListener("keydown", (e) => {
+    const isAltL = e.altKey && (e.code === "KeyL" || e.key === "l" || e.key === "L" || e.key === "م");
+    const isCtrlL = e.ctrlKey && !e.shiftKey && (e.code === "KeyL" || e.key === "l" || e.key === "L" || e.key === "م");
+
+    if (isAltL || isCtrlL) {
+      e.preventDefault();
+      lamp.classList.add("pulling");
+      setTimeout(() => {
+        toggleLamp();
+      }, 90);
+    }
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   loadState();
   bindAllEvents();
   initUpdaterEvents();
   initGuideEvents();
   initCard3DTiltAndMagneticHover();
+  initCyberLampFocusMode();
   startUpdaterHeartbeat();
   fetchCurrentVersion();
   renderUnitsToolbar();
