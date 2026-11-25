@@ -4136,7 +4136,7 @@ select.input-field option { background: var(--bg-secondary); color: #fff; }
 }
 
 .confirm-target-box {
-  margin: 12px 0 8px;
+  margin: 0;
   padding: 12px 16px;
   border-radius: 12px;
   background: rgba(6, 11, 24, 0.78);
@@ -4153,7 +4153,7 @@ select.input-field option { background: var(--bg-secondary); color: #fff; }
 }
 
 .confirm-target-unit {
-  font-size: 1.12rem;
+  font-size: 1.08rem;
   font-weight: 800;
   color: #ffffff;
   line-height: 1.25;
@@ -4168,7 +4168,7 @@ select.input-field option { background: var(--bg-secondary); color: #fff; }
 .confirm-modal-note {
   font-size: 0.82rem;
   color: #94a3b8;
-  margin: 4px 0 0;
+  margin: 0;
 }
 
 .btn-danger-neon {
@@ -4176,10 +4176,11 @@ select.input-field option { background: var(--bg-secondary); color: #fff; }
   color: #ffffff;
   border: 1px solid rgba(251, 113, 133, 0.65);
   border-radius: 10px;
-  padding: 9px 22px;
+  padding: 9px 20px;
   font-family: var(--font-main);
-  font-size: 0.86rem;
+  font-size: 0.85rem;
   font-weight: 700;
+  line-height: 1.2;
   cursor: pointer;
   box-shadow: 0 4px 18px rgba(244, 63, 94, 0.38);
   transition: transform 0.18s ease, box-shadow 0.2s ease, filter 0.2s ease;
@@ -4348,14 +4349,20 @@ select.input-field option { background: var(--bg-secondary); color: #fff; }
 }
 
 .modal-dialog.update-dialog {
-  background: #0f172a;
-  border: 1px solid rgba(6, 182, 212, 0.35);
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7), 0 0 35px rgba(6, 182, 212, 0.15);
+  background: rgba(11, 17, 34, 0.94);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(6, 182, 212, 0.38);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 38px rgba(6, 182, 212, 0.18);
   border-radius: 20px;
   width: 100%;
   max-width: 490px;
   overflow: hidden;
-  animation: scaleUpDialog 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: scaleUpDialog 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-dialog.unit-dialog {
+  max-width: 440px;
 }
 
 /* ══════════════════ HOW TO USE ME GUIDE DIALOG ══════════════════ */
@@ -4599,10 +4606,10 @@ select.input-field option { background: var(--bg-secondary); color: #fff; }
 }
 
 .dialog-body {
-  padding: 20px 24px;
+  padding: 18px 24px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .update-versions-badge {
@@ -4814,14 +4821,15 @@ select.input-field option { background: var(--bg-secondary); color: #fff; }
 }
 
 .btn-cancel {
-  padding: 10px 18px;
+  padding: 9px 20px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   background: transparent;
   color: #94a3b8;
   font-family: var(--font-main);
   font-size: 0.85rem;
   font-weight: 600;
+  line-height: 1.2;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -4832,14 +4840,15 @@ select.input-field option { background: var(--bg-secondary); color: #fff; }
 }
 
 .btn-update-confirm {
-  padding: 10px 20px;
+  padding: 9px 20px;
   border-radius: 10px;
-  border: none;
+  border: 1px solid rgba(56, 189, 248, 0.45);
   background: linear-gradient(135deg, #06b6d4, #8b5cf6);
   color: #ffffff;
   font-family: var(--font-main);
   font-size: 0.85rem;
   font-weight: 700;
+  line-height: 1.2;
   cursor: pointer;
   display: flex;
   align-items: center;
