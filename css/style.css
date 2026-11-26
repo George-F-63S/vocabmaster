@@ -71,8 +71,6 @@ body {
   top: 0;
   z-index: 120;
   background: linear-gradient(180deg, rgba(6, 11, 26, 0.98) 0%, rgba(4, 7, 18, 0.99) 100%);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   border-right: 1px solid rgba(0, 240, 255, 0.22);
   box-shadow: 4px 0 24px rgba(0, 0, 0, 0.65), 1px 0 12px rgba(0, 240, 255, 0.08);
   display: flex;
@@ -2291,8 +2289,7 @@ body {
 
 /* Right Column: Deck Queue Sidebar */
 .deck-queue-panel {
-  background: linear-gradient(170deg, rgba(15, 23, 42, 0.85) 0%, rgba(8, 12, 22, 0.95) 100%);
-  backdrop-filter: blur(20px);
+  background: linear-gradient(170deg, rgba(15, 23, 42, 0.95) 0%, rgba(8, 12, 22, 0.98) 100%);
   border: 1.5px solid rgba(0, 212, 255, 0.18);
   border-radius: 20px;
   padding: 20px 18px;
@@ -2300,6 +2297,7 @@ body {
   display: flex;
   flex-direction: column;
   box-shadow: 0 16px 45px rgba(0, 0, 0, 0.6), 0 0 25px rgba(0, 212, 255, 0.06);
+  contain: layout style;
 }
 
 .queue-header {
@@ -2341,10 +2339,12 @@ body {
   gap: 12px;
   padding: 12px 14px;
   border-radius: 14px;
-  background: rgba(15, 23, 42, 0.7);
+  background: rgba(15, 23, 42, 0.78);
   border: 1.5px solid rgba(148, 163, 184, 0.12);
   cursor: pointer;
-  transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  content-visibility: auto;
+  contain-intrinsic-size: 58px;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .queue-item:hover {
@@ -2514,9 +2514,7 @@ body {
   min-height: 520px;
   margin: 0 auto;
   box-sizing: border-box;
-  background: rgba(13, 20, 36, 0.78);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(13, 20, 36, 0.94);
   border: 1px solid rgba(56, 189, 248, 0.22);
   border-radius: 22px;
   padding: 24px 28px;
@@ -2710,15 +2708,13 @@ body {
 .mcq-opt {
   padding: 14px 18px;
   border-radius: 14px;
-  background: rgba(15, 23, 42, 0.65);
+  background: rgba(15, 23, 42, 0.88);
   border: 1.5px solid rgba(56, 189, 248, 0.22);
   color: #f8fafc;
   font-size: 0.98rem;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
   display: flex;
   align-items: center;
@@ -4021,6 +4017,10 @@ select.input-field option { background: var(--bg-secondary); color: #fff; }
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
   vertical-align: middle;
 }
+.wordlist-table tbody tr {
+  content-visibility: auto;
+  contain-intrinsic-size: 42px;
+}
 .wordlist-table tbody tr:hover td { background: rgba(6, 182, 212, 0.05); }
 .wordlist-table tbody tr.mistake-row { background: rgba(245, 158, 11, 0.05); }
 
@@ -4137,7 +4137,7 @@ select.input-field option { background: var(--bg-secondary); color: #fff; }
 
 .confirm-target-box {
   margin: 0;
-  padding: 12px 16px;
+  padding: 10px 14px;
   border-radius: 12px;
   background: rgba(6, 11, 24, 0.78);
   border: 1px solid rgba(56, 189, 248, 0.22);
@@ -4606,10 +4606,10 @@ select.input-field option { background: var(--bg-secondary); color: #fff; }
 }
 
 .dialog-body {
-  padding: 18px 24px;
+  padding: 16px 24px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .update-versions-badge {

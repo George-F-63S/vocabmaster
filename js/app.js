@@ -119,11 +119,9 @@ function seedInitialState() {
   };
 }
 
-function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  updateHeaderStats();
+let _diskSaveTimer = null;
+function flushDiskStore() {
   if (!IS_DESKTOP_SHELL) return;
-  // Persistent disk backup via local C# API
   try {
     fetch(`${UPDATER_BASE}/save-store`, {
       method: "POST",
@@ -131,6 +129,26 @@ function saveState() {
       body: JSON.stringify(state)
     }).catch(() => {});
   } catch (_) {}
+}
+
+window.addEventListener("beforeunload", () => {
+  if (_diskSaveTimer) {
+    clearTimeout(_diskSaveTimer);
+    _diskSaveTimer = null;
+    flushDiskStore();
+  }
+});
+
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  updateHeaderStats();
+  if (!IS_DESKTOP_SHELL) return;
+  // Debounce persistent disk backup via local C# API so rapid actions stay instant
+  clearTimeout(_diskSaveTimer);
+  _diskSaveTimer = setTimeout(() => {
+    _diskSaveTimer = null;
+    flushDiskStore();
+  }, 350);
 }
 
 // ────────────────────── QUERY HELPERS ──────────────────────
@@ -1176,24 +1194,58 @@ function renderFlashcard() {
   renderDeckQueue(words);
 }
 
+let _lastQueueSignature = "";
+let _queueDelegationBound = false;
+
 function renderDeckQueue(words) {
   const container = $("#fcMiniQueue");
-  container.innerHTML = "";
+  if (!container) return;
+
+  if (!_queueDelegationBound) {
+    _queueDelegationBound = true;
+    container.addEventListener("click", (e) => {
+      const speakBtn = e.target.closest(".queue-speak-btn");
+      const item = e.target.closest(".queue-item");
+      if (!item) return;
+      const idx = Number(item.dataset.idx);
+      const activeWords = getActiveWords();
+      const targetWord = activeWords[idx];
+      if (!targetWord) return;
+      if (speakBtn) {
+        e.stopPropagation();
+        playSpeech(targetWord.word);
+        return;
+      }
+      flashcardIndex = idx;
+      renderFlashcard();
+      if (state.autoPlayAudio) playSpeech(targetWord.word);
+    });
+  }
 
   if (words.length === 0) {
+    _lastQueueSignature = "";
     container.innerHTML = `<div style="text-align:center;color:var(--text-secondary);font-size:0.78rem;padding:40px 10px;">No words in this deck.</div>`;
     return;
   }
 
-  const frag = document.createDocumentFragment();
-  words.forEach((w, idx) => {
+  const sig = `${state.activeUnitId}|${words.length}|${words.map((w) => `${w.id}:${w.mastery || 0}:${w._isMistake ? 1 : 0}`).join(",")}`;
+  if (sig === _lastQueueSignature && container.children.length === words.length) {
+    const prevActive = container.querySelector(".queue-item.active");
+    if (prevActive) prevActive.classList.remove("active");
+    const nextActive = container.children[flashcardIndex];
+    if (nextActive) {
+      nextActive.classList.add("active");
+      nextActive.scrollIntoView({ block: "nearest", behavior: "auto" });
+    }
+    return;
+  }
+
+  _lastQueueSignature = sig;
+  const html = words.map((w, idx) => {
     const m = w.mastery || 0;
     const dotClass = m >= 80 ? "high" : m >= 40 ? "mid" : "low";
     const isActive = idx === flashcardIndex;
-
-    const item = document.createElement("div");
-    item.className = `queue-item ${isActive ? "active" : ""}`;
-    item.innerHTML = `
+    return `<div class="queue-item ${isActive ? "active" : ""}" data-idx="${idx}">
       <div class="queue-item-left">
         <span class="queue-dot ${dotClass}"></span>
         <div class="queue-text">
@@ -1205,24 +1257,11 @@ function renderDeckQueue(words) {
         <span class="queue-pct">${m}%</span>
         <button class="queue-speak-btn" title="Speak">🔊</button>
       </div>
-    `;
+    </div>`;
+  }).join("");
 
-    item.addEventListener("click", () => {
-      flashcardIndex = idx;
-      renderFlashcard();
-      if (state.autoPlayAudio) playSpeech(w.word);
-    });
-
-    item.querySelector(".queue-speak-btn").addEventListener("click", (e) => {
-      e.stopPropagation();
-      playSpeech(w.word);
-    });
-
-    frag.appendChild(item);
-  });
-
-  container.appendChild(frag);
-  const activeEl = container.querySelector(".queue-item.active");
+  container.innerHTML = html;
+  const activeEl = container.children[flashcardIndex];
   if (activeEl) activeEl.scrollIntoView({ block: "nearest", behavior: "auto" });
 }
 
@@ -2685,25 +2724,38 @@ function renderExplorer() {
   }
 }
 
+let _bentoDelegationBound = false;
 function renderBentoGrid(list) {
   const grid = $("#wordCardsGrid");
-  grid.innerHTML = "";
-  const frag = document.createDocumentFragment();
+  if (!_bentoDelegationBound) {
+    _bentoDelegationBound = true;
+    grid.addEventListener("click", (e) => {
+      const card = e.target.closest(".bento-word-card");
+      if (!card) return;
+      const wordId = card.dataset.wordId;
+      const unitId = card.dataset.unitId;
+      if (e.target.closest(".btn-speak")) {
+        playSpeech(card.dataset.wordText || "");
+      } else if (e.target.closest(".btn-mistake-toggle")) {
+        toggleManualMistake(wordId);
+      } else if (e.target.closest(".btn-delete-word")) {
+        deleteWord(wordId, unitId);
+      }
+    });
+  }
 
-  list.forEach((w) => {
+  grid.innerHTML = list.map((w) => {
     const m = w.mastery || 0;
     const tier = m >= 80 ? "high" : m >= 40 ? "mid" : "low";
     const isMistake = !!state.mistakes[w.id];
-
-    const card = document.createElement("div");
-    card.className = `bento-word-card ${isMistake ? "mistake-card" : ""}`;
-    card.innerHTML = `
+    const safeWord = escapeHTML(w.word);
+    return `<div class="bento-word-card ${isMistake ? "mistake-card" : ""}" data-word-id="${escapeHTML(w.id)}" data-unit-id="${escapeHTML(w._unitId)}" data-word-text="${safeWord}">
       <div>
         <div class="bento-card-top">
           <div class="bento-word-title-group">
             <button class="btn-speak" title="Pronounce">🔊</button>
             <div>
-              <div class="bento-word-name">${escapeHTML(w.word)}</div>
+              <div class="bento-word-name">${safeWord}</div>
               <div class="bento-word-meta">${escapeHTML(w.type || "Word")} • ${escapeHTML(w._unitName)}</div>
             </div>
           </div>
@@ -2725,31 +2777,30 @@ function renderBentoGrid(list) {
           <button class="btn-delete-word" title="Delete Word">🗑️</button>
         </div>
       </div>
-    `;
-
-    card.querySelector(".btn-speak").addEventListener("click", () => playSpeech(w.word));
-    card.querySelector(".btn-mistake-toggle").addEventListener("click", () => toggleManualMistake(w.id));
-    card.querySelector(".btn-delete-word").addEventListener("click", () => deleteWord(w.id, w._unitId));
-    frag.appendChild(card);
-  });
-
-  grid.appendChild(frag);
+    </div>`;
+  }).join("");
 }
 
+let _tableDelegationBound = false;
 function renderWordTable(list) {
   const tbody = $("#wordlistBody");
-  tbody.innerHTML = "";
-  const frag = document.createDocumentFragment();
+  if (!_tableDelegationBound) {
+    _tableDelegationBound = true;
+    tbody.addEventListener("click", (e) => {
+      const delBtn = e.target.closest(".btn-delete-word");
+      if (!delBtn) return;
+      const tr = delBtn.closest("tr");
+      if (!tr) return;
+      deleteWord(tr.dataset.wordId, tr.dataset.unitId);
+    });
+  }
 
-  list.forEach((w, idx) => {
+  tbody.innerHTML = list.map((w, idx) => {
     const m = w.mastery || 0;
     const tier = m >= 80 ? "high" : m >= 40 ? "mid" : "low";
     const mc = m < 40 ? "mastery-low" : m < 80 ? "mastery-mid" : "mastery-high";
     const isMistake = !!state.mistakes[w.id];
-
-    const tr = document.createElement("tr");
-    if (isMistake) tr.className = "mistake-row";
-    tr.innerHTML = `
+    return `<tr class="${isMistake ? "mistake-row" : ""}" data-word-id="${escapeHTML(w.id)}" data-unit-id="${escapeHTML(w._unitId)}">
       <td class="num-cell">${idx + 1}</td>
       <td class="word-cell">
         <span class="queue-dot ${tier}" style="display:inline-block; vertical-align:middle; margin-right:8px; width:9px; height:9px; border-radius:50%;"></span>
@@ -2766,12 +2817,8 @@ function renderWordTable(list) {
       <td>
         <button class="btn-delete-word" title="Delete Word">✕</button>
       </td>
-    `;
-    tr.querySelector(".btn-delete-word").addEventListener("click", () => deleteWord(w.id, w._unitId));
-    frag.appendChild(tr);
-  });
-
-  tbody.appendChild(frag);
+    </tr>`;
+  }).join("");
 }
 
 // ════════════════════════════════════════════════════
@@ -3199,7 +3246,11 @@ function bindAllEvents() {
     });
     syncListScopeFilterTheme();
   }
-  $("#searchInput").addEventListener("input", renderExplorer);
+  let _searchDebounce = null;
+  $("#searchInput").addEventListener("input", () => {
+    clearTimeout(_searchDebounce);
+    _searchDebounce = setTimeout(renderExplorer, 110);
+  });
   $("#btnViewCards").addEventListener("click", () => setExplorerView("cards"));
   $("#btnViewTable").addEventListener("click", () => setExplorerView("table"));
 
