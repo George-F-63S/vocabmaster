@@ -1,8 +1,8 @@
 {
-  "version": "1.5.2",
-  "build": 47,
-  "date": "2026-11-24",
-  "notes": "📱 VocabMaster v1.5.2 - Full Mobile PWA Edition: Sleek mobile bottom navigation & slide-out deck drawer, touch swipe flashcards, responsive Practice Arena & Context Builder, offline Service Worker caching, and iOS/Android standalone installation.",
+  "version": "1.5.3",
+  "build": 67,
+  "date": "2026-11-26",
+  "notes": "🚀 VocabMaster v1.5.3 - Ultra-Speed PC & Smooth UI Edition: O(1) deck queue switching, event delegation, debounced disk saves, GPU blur cleanup, unified dark-glass modals, Cyberpunk Confirm Delete + Undo Toast with Unit/Part tree, Auto-Voice card stability fix, and silky-smooth collapsible sidebar.",
   "changed_files": [
     "index.html",
     "css/style.css",
