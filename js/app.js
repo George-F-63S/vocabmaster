@@ -1137,6 +1137,7 @@ function shuffleFlashcards() {
 function renderFlashcard() {
   const words = getActiveWords();
   updateAutoAudioUI();
+  if (typeof updateHeaderStats === "function") updateHeaderStats();
 
   isCardFlipped = false;
   const cardBody = $("#cardBody");
@@ -4135,7 +4136,7 @@ function initCard3DTiltAndMagneticHover() {
 
       targetTiltX = -edgeY * maxTilt;
       targetTiltY = edgeX * maxTilt;
-      targetScale = 1.015;
+      targetScale = 1;
 
       const glarePercentX = Math.max(0, Math.min(100, (mouseX / rect.width) * 100));
       const glarePercentY = Math.max(0, Math.min(100, (mouseY / rect.height) * 100));
@@ -4161,14 +4162,14 @@ function initCard3DTiltAndMagneticHover() {
       targetTiltX = 0;
       targetTiltY = 0;
       targetScale = 1;
-      cardBody.style.transition = "transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.5s ease";
+      cardBody.style.transition = "none";
       if (!tiltRafId) tiltRafId = requestAnimationFrame(animateTilt);
     });
 
     cardScene.addEventListener("mouseenter", () => {
       isHovering = true;
       cardBody.style.transition = "none";
-      targetScale = 1.035;
+      targetScale = 1;
       if (!tiltRafId) tiltRafId = requestAnimationFrame(animateTilt);
     });
   }
