@@ -1,0 +1,35 @@
+{
+  "version": "1.5.3",
+  "build": 67,
+  "date": "2026-11-26",
+  "notes": "🚀 VocabMaster v1.5.3 - Ultra-Speed PC & Smooth UI Edition: O(1) deck queue switching, event delegation, debounced disk saves, GPU blur cleanup, unified dark-glass modals, Cyberpunk Confirm Delete + Undo Toast with Unit/Part tree, Auto-Voice card stability fix, and silky-smooth collapsible sidebar.",
+  "changed_files": [
+    "index.html",
+    "css/style.css",
+    "js/app.js",
+    "manifest.json",
+    "sw.js",
+    "version.json",
+    "assets/icons/icon-192.png"
+  ],
+  "update_exe": false,
+  "files": [
+    "index.html",
+    "css/style.css",
+    "js/app.js",
+    "manifest.json",
+    "sw.js",
+    "version.json",
+    "app.ico",
+    "assets/icons/app.ico",
+    "assets/icons/logo.png",
+    "assets/icons/icon-192.png",
+    "assets/icons/avatar-crest.png",
+    "assets/icons/favicon.png",
+    "assets/icons/favicon-32.png",
+    "assets/icons/favicon-16.png",
+    "assets/icons/speaker-3d.png",
+    "assets/icons/speaker_3d_exact.png",
+    "README.md"
+  ]
+}
